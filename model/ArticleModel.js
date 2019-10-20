@@ -81,7 +81,9 @@ class ArticleModel {
      */
     static async getArticleList(limit) {
         return Article.findAll({
-            order: [['id', 'DESC']],
+            order: [
+                ['id', 'DESC'],
+            ],
             attributes: ['id', 'article_title', 'article_pic', 'create_time', 'article_cont'],
             include: [{
                 model: Tag,

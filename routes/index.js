@@ -41,7 +41,6 @@ router.get('/tag_to_article', TagController.TagToArticleList);
 /**
  * 文章归档接口
  */
-// 文章归档列表接口
 router.get('/archives', ArchivesController.Index);
 
 module.exports = router

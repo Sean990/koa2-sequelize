@@ -24,11 +24,7 @@ class TagModel {
     }
 
     /**
-<<<<<<< HEAD
-     * 查询文章列表
-=======
      * 查询标签列表
->>>>>>> 更新标签接口
      * @returns {Promise<<Model[]>>}
      */
     static async getTagList() {
