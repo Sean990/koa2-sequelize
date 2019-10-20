@@ -5,7 +5,7 @@
 const ArticleModel = require('../model/ArticleModel')
 const moment = require('moment')
 
-class IndexController {
+class ArchivesController {
     static async Index(ctx){
         try {
             // 查询文章详情模型
@@ -42,45 +42,6 @@ class IndexController {
             }
         }
     }
-
-    /**
-     * 最近的文章
-     * @param ctx
-     * @returns {Promise<void>}
-     * @constructor
-     */
-    static async Recent(ctx){
-        try {
-            // 查询文章详情模型
-            let data = JSON.parse(JSON.stringify(await ArticleModel.getArticleList(3)));
-
-            for (let index in data) {
-                if (data.hasOwnProperty(index)) {
-                    let item = data[index];
-                    delete item['article_cont'];
-                    delete item['z_tags'];
-                    delete item['z_user'];
-                    item.detail_time = moment(item.create_time * 1000).format('YYYY年MM月DD日hh时mm分')
-                    item.create_time = moment(item.create_time * 1000).format('YYYY年MM月DD日')
-                }
-            }
-
-            ctx.response.status = 200;
-            ctx.body = {
-                code: 200,
-                msg: '查询成功',
-                data
-            }
-
-        } catch (err) {
-            ctx.response.status = 412;
-            ctx.body = {
-                code: 412,
-                msg: '查询失败',
-                err
-            }
-        }
-    }
 }
 
-module.exports = IndexController;
+module.exports = ArchivesController;

@@ -6,7 +6,7 @@ const bodyparser = require('koa-bodyparser');
 const logger = require('koa-logger');
 const reflect = require("reflect-metadata");
 
-const index = require('./routes/index');
+const index = require('./routes');
 
 const app = new Koa();
 app.use(cors());

@@ -57,19 +57,31 @@ class ArticleModel {
      */
     static async getArticleDetail(id) {
         return Article.findOne({
-            where: {id}
+            where: {id, status: 1},
+            attributes: {exclude: ['user_id']},
+            include: [{
+                model: Tag,
+                attributes: ['id', 'tag_title'],
+                through: {
+                    // 指定中间表的属性，这里表示不需要任何中间表的属性
+                    attributes: []
+                }
+            },{
+                model: User,
+                attributes: ['id', 'nickname', 'avatar'],
+                where: {status: 1}
+            }]
         })
     }
 
     /**
      * 查询文章列表
-     * @returns {Promise<<Model[]>>}
+     * @param limit 查询条数
+     * @returns {Promise<<Model<T, T2>[]>>}
      */
-    static async getArticleList() {
+    static async getArticleList(limit) {
         return Article.findAll({
-            order: [
-                ['create_time', 'DESC'],
-            ],
+            order: [['id', 'DESC']],
             attributes: ['id', 'article_title', 'article_pic', 'create_time', 'article_cont'],
             include: [{
                 model: Tag,
@@ -84,7 +96,34 @@ class ArticleModel {
                 attributes: ['id', 'nickname', 'avatar'],
                 where: {status: 1}
             }],
-            limit: 10
+            limit: limit
+        })
+    }
+
+    /**
+     * 根据tagId查询文章列表
+     * @returns {Promise<<Model<T, T2>[]>>}
+     */
+    static async getTagToArticleList(id) {
+        return Tag.findOne({
+            where: {id: id, status: 1},
+            attributes: ['tag_title'],
+            include: [{
+                model: Article,
+                attributes: ['id', 'article_title', 'article_pic', 'create_time', 'article_cont'],
+                through: {
+                    // 指定中间表的属性，这里表示不需要任何中间表的属性
+                    attributes: []
+                },
+                order: [
+                    ['id', 'DESC'],
+                ],
+                include: [{
+                    model: User,
+                    attributes: ['id', 'nickname', 'avatar'],
+                    where: {status: 1}
+                }]
+            }]
         })
     }
 }

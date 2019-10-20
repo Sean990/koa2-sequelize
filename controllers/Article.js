@@ -57,7 +57,11 @@ class ArticleController {
         if (id) {
             try {
                 // 查询文章详情模型
-                let data = await ArticleModel.getArticleDetail(id);
+                let data = JSON.parse(JSON.stringify(await ArticleModel.getArticleDetail(id)));
+                data['tags'] = data['z_tags'];
+                data['user'] = data['z_user'];
+                delete data['z_tags'];
+                delete data['z_user'];
                 data.detail_time = moment(data.create_time * 1000).format('YYYY年MM月DD日hh时mm分')
                 data.create_time = moment(data.create_time * 1000).format('YYYY年MM月DD日')
                 data.update_time = moment(data.update_time * 1000).format('YYYY年MM月DD日')
