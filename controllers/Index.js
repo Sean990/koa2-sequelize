@@ -1,4 +1,5 @@
 import ArticleModel from '../model/ArticleModel.js';
+import CategoryModel from '../model/CategoryModel.js';
 import FriendLinkModel from '../model/FriendLinkModel.js';
 import UserModel from '../model/UserModel.js';
 import { success } from '../utils/response.js';
@@ -31,15 +32,17 @@ class IndexController {
 	}
 
 	static async Dashboard(ctx) {
-		const [articleStats, userCount, friendLinkCount] = await Promise.all([
+	const [articleStats, userCount, friendLinkCount, categories] = await Promise.all([
 			ArticleModel.getDashboardStats(),
 			UserModel.countActiveUsers(),
 			FriendLinkModel.countActiveFriendLinks(),
+			CategoryModel.getPublicCategoryList(),
 		]);
 		const data = {
 			...articleStats,
 			userCount,
 			friendLinkCount,
+			categoryCount: categories.length,
 			recentArticles: toPlain(articleStats.recentArticles).map((item) => ({
 				...item,
 				create_time: formatDate(item.create_time),

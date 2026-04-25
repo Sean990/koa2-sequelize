@@ -4,9 +4,26 @@ export default {
 	env: process.env.NODE_ENV || 'development',
 	port: Number(process.env.PORT) || 3000,
 	bodyLimit: process.env.BODY_LIMIT || '2mb',
+	appUrl: process.env.APP_URL || '',
 	cors: {
 		origin: process.env.CORS_ORIGIN || '*',
 		credentials: process.env.CORS_CREDENTIALS === 'true',
+	},
+	security: {
+		rateLimitWindowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 60 * 1000,
+		rateLimitMax: Number(process.env.RATE_LIMIT_MAX) || 120,
+		loginFailureWindowMs: Number(process.env.LOGIN_FAILURE_WINDOW_MS) || 15 * 60 * 1000,
+		loginFailureMax: Number(process.env.LOGIN_FAILURE_MAX) || 5,
+		loginLockMs: Number(process.env.LOGIN_LOCK_MS) || 15 * 60 * 1000,
+	},
+	upload: {
+		dir: process.env.UPLOAD_DIR || 'public/uploads',
+		urlPrefix: process.env.UPLOAD_URL_PREFIX || '/uploads',
+		maxSize: Number(process.env.UPLOAD_MAX_SIZE) || 2 * 1024 * 1024,
+		allowedMimes: (process.env.UPLOAD_ALLOWED_MIMES || 'image/jpeg,image/png,image/webp,image/gif')
+			.split(',')
+			.map((item) => item.trim())
+			.filter(Boolean),
 	},
 	database: {
 		dbName: process.env.DB_NAME || 'love_sql',

@@ -4,15 +4,19 @@ import cmsArticle from '../schema/cms_article.js';
 import cmsUser from '../schema/cms_user.js';
 import cmsTag from '../schema/cms_tag.js';
 import cmsArticleTag from '../schema/cms_article_tag.js';
+import CategoryModel from './CategoryModel.js';
 import { now } from '../utils/format.js';
 
 const Article = cmsArticle(sequelize, DataTypes);
 const User = cmsUser(sequelize, DataTypes);
 const Tag = cmsTag(sequelize, DataTypes);
 const ArticleTag = cmsArticleTag(sequelize, DataTypes);
+const Category = CategoryModel.raw;
 
 User.hasMany(Article, { as: 'articles', foreignKey: 'user_id', targetKey: 'id' });
 Article.belongsTo(User, { as: 'user', foreignKey: 'user_id', targetKey: 'id' });
+Category.hasMany(Article, { as: 'articles', foreignKey: 'category_id', targetKey: 'id' });
+Article.belongsTo(Category, { as: 'category', foreignKey: 'category_id', targetKey: 'id' });
 
 Article.belongsToMany(Tag, {
 	as: 'tags',
@@ -31,6 +35,24 @@ Tag.belongsToMany(Article, {
 
 const publicUserAttrs = ['id', 'nickname', 'avatar'];
 const publicTagAttrs = ['id', 'tag_title'];
+const publicCategoryAttrs = ['id', 'category_name', 'category_slug'];
+const publicArticleAttrs = [
+	'id',
+	'category_id',
+	'article_title',
+	'article_pic',
+	'article_summary',
+	'article_slug',
+	'article_view',
+	'is_top',
+	'is_recommend',
+	'sort',
+	'seo_title',
+	'seo_keywords',
+	'seo_description',
+	'create_time',
+	'article_cont',
+];
 
 function buildKeywordWhere(keyword = '') {
 	const text = String(keyword || '').trim();
@@ -77,8 +99,17 @@ class ArticleModel {
 		const article = await Article.create({
 			article_title: data.article_title,
 			user_id: data.user_id,
+			category_id: data.category_id ?? 0,
 			article_cont: data.article_cont,
 			article_pic: data.article_pic ?? '',
+			article_summary: data.article_summary ?? '',
+			article_slug: data.article_slug ?? '',
+			seo_title: data.seo_title ?? '',
+			seo_keywords: data.seo_keywords ?? '',
+			seo_description: data.seo_description ?? '',
+			sort: data.sort ?? 0,
+			is_top: data.is_top ?? 0,
+			is_recommend: data.is_recommend ?? 0,
 			status: data.status ?? 1,
 			create_time: ts,
 			update_time: ts,
@@ -91,7 +122,21 @@ class ArticleModel {
 		const article = await Article.findByPk(id);
 		if (!article || article.status === 0) return 0;
 
-		const allowed = ['article_title', 'article_cont', 'article_pic', 'status'];
+		const allowed = [
+			'category_id',
+			'article_title',
+			'article_cont',
+			'article_pic',
+			'article_summary',
+			'article_slug',
+			'seo_title',
+			'seo_keywords',
+			'seo_description',
+			'sort',
+			'is_top',
+			'is_recommend',
+			'status',
+		];
 		const patch = {};
 		for (const key of allowed) {
 			if (data[key] !== undefined) patch[key] = data[key];
@@ -115,7 +160,13 @@ class ArticleModel {
 
 	static async getArticleDetail(id) {
 		return Article.findOne({
-			where: { id, status: 1 },
+			where: {
+				status: 1,
+				[Op.or]: [
+					{ id: Number.parseInt(id, 10) || 0 },
+					{ article_slug: String(id) },
+				],
+			},
 			attributes: { exclude: ['user_id'] },
 			include: [
 				{
@@ -132,6 +183,13 @@ class ArticleModel {
 					attributes: publicUserAttrs,
 					where: { status: 1 },
 				},
+				{
+					model: Category,
+					as: 'category',
+					attributes: publicCategoryAttrs,
+					where: { status: 1 },
+					required: false,
+				},
 			],
 		});
 	}
@@ -139,8 +197,8 @@ class ArticleModel {
 	static async getArticleList(limit = 10) {
 		return Article.findAll({
 			where: { status: 1 },
-			order: [['id', 'DESC']],
-			attributes: ['id', 'article_title', 'article_pic', 'article_view', 'create_time', 'article_cont'],
+			order: [['is_top', 'DESC'], ['sort', 'DESC'], ['id', 'DESC']],
+			attributes: publicArticleAttrs,
 			include: [
 				{
 					model: Tag,
@@ -156,21 +214,31 @@ class ArticleModel {
 					attributes: publicUserAttrs,
 					where: { status: 1 },
 				},
+				{
+					model: Category,
+					as: 'category',
+					attributes: publicCategoryAttrs,
+					where: { status: 1 },
+					required: false,
+				},
 			],
 			limit: Number(limit) || 10,
 		});
 	}
 
-	static async getPublicArticlePage({ page = 1, pageSize = 10, keyword = '', tag_id } = {}) {
+	static async getPublicArticlePage({ page = 1, pageSize = 10, keyword = '', tag_id, category_id, recommend } = {}) {
 		const offset = (page - 1) * pageSize;
 		const tagWhere = tag_id ? { id: tag_id, status: 1 } : { status: 1 };
+		const where = {
+			status: 1,
+			...buildKeywordWhere(keyword),
+		};
+		if (category_id) where.category_id = category_id;
+		if (recommend !== undefined && recommend !== '') where.is_recommend = recommend;
 		const { count, rows } = await Article.findAndCountAll({
-			where: {
-				status: 1,
-				...buildKeywordWhere(keyword),
-			},
-			order: [['id', 'DESC']],
-			attributes: ['id', 'article_title', 'article_pic', 'article_view', 'create_time', 'article_cont'],
+			where,
+			order: [['is_top', 'DESC'], ['sort', 'DESC'], ['id', 'DESC']],
+			attributes: publicArticleAttrs,
 			include: [
 				{
 					model: Tag,
@@ -185,6 +253,13 @@ class ArticleModel {
 					as: 'user',
 					attributes: publicUserAttrs,
 					where: { status: 1 },
+				},
+				{
+					model: Category,
+					as: 'category',
+					attributes: publicCategoryAttrs,
+					where: { status: 1 },
+					required: false,
 				},
 			],
 			offset,
@@ -201,12 +276,18 @@ class ArticleModel {
 
 		const { count, rows } = await Article.findAndCountAll({
 			where,
-			order: [['id', 'DESC']],
+			order: [['is_top', 'DESC'], ['sort', 'DESC'], ['id', 'DESC']],
 			attributes: [
 				'id',
+				'category_id',
 				'article_title',
 				'article_pic',
+				'article_summary',
+				'article_slug',
 				'article_view',
+				'is_top',
+				'is_recommend',
+				'sort',
 				'status',
 				'create_time',
 				'update_time',
@@ -214,6 +295,7 @@ class ArticleModel {
 			include: [
 				{ model: Tag, as: 'tags', attributes: publicTagAttrs, through: { attributes: [] }, required: false },
 				{ model: User, as: 'user', attributes: publicUserAttrs, required: false },
+				{ model: Category, as: 'category', attributes: publicCategoryAttrs, required: false },
 			],
 			offset,
 			limit: pageSize,
@@ -230,16 +312,24 @@ class ArticleModel {
 				{
 					model: Article,
 					as: 'articles',
-					attributes: ['id', 'article_title', 'article_pic', 'article_view', 'create_time', 'article_cont'],
+					attributes: publicArticleAttrs,
 					through: { attributes: [] },
 					where: { status: 1 },
 					required: false,
+					order: [['is_top', 'DESC'], ['sort', 'DESC'], ['id', 'DESC']],
 					include: [
 						{
 							model: User,
 							as: 'user',
 							attributes: publicUserAttrs,
 							where: { status: 1 },
+						},
+						{
+							model: Category,
+							as: 'category',
+							attributes: publicCategoryAttrs,
+							where: { status: 1 },
+							required: false,
 						},
 					],
 				},

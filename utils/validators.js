@@ -46,6 +46,35 @@ export function optionalPositiveInt(value, defaultValue, label = '参数') {
 	return num;
 }
 
+export function optionalInt(value, defaultValue = 0, label = '参数', { min = 0, max = Number.MAX_SAFE_INTEGER } = {}) {
+	if (value === undefined || value === null || value === '') return defaultValue;
+	const num = Number.parseInt(value, 10);
+	if (!Number.isInteger(num) || num < min || num > max) {
+		throw new ParameterException(`${label}必须是 ${min} 到 ${max} 之间的整数`);
+	}
+	return num;
+}
+
+export function normalizeBooleanFlag(value, defaultValue = 0, label = '参数') {
+	if (value === undefined || value === null || value === '') return defaultValue;
+	if (value === true || value === 'true') return 1;
+	if (value === false || value === 'false') return 0;
+	const num = Number.parseInt(value, 10);
+	if (![0, 1].includes(num)) {
+		throw new ParameterException(`${label}只能是 0 或 1`);
+	}
+	return num;
+}
+
+export function optionalSlug(source, field, label = field, { max = 120 } = {}) {
+	const value = optionalString(source, field, label, { max });
+	if (value === undefined || value === '') return value;
+	if (!/^[a-zA-Z0-9_-]+$/.test(value)) {
+		throw new ParameterException(`${label}只能包含字母、数字、中划线和下划线`);
+	}
+	return value;
+}
+
 export function pagination(query = {}, { defaultPageSize = 10, maxPageSize = 100 } = {}) {
 	const page = optionalPositiveInt(query.page, 1, '页码');
 	const rawPageSize = optionalPositiveInt(query.pageSize, defaultPageSize, '每页数量');

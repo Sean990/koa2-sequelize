@@ -3,6 +3,9 @@ import { empty, created, success } from '../utils/response.js';
 import { excerpt, formatDate, formatDateTime, toPlain } from '../utils/format.js';
 import {
 	normalizeStatus,
+	normalizeBooleanFlag,
+	optionalInt,
+	optionalSlug,
 	pagination,
 	parseTagIds,
 	positiveInt,
@@ -15,6 +18,7 @@ function normalizeArticle(item, { contentLimit = 300, withUpdateTime = false } =
 	const data = item.toJSON ? item.toJSON() : item;
 	data.tags = data.tags || [];
 	data.user = data.user || null;
+	data.category = data.category || null;
 	if (data.article_cont && contentLimit) {
 		data.article_cont = excerpt(data.article_cont, contentLimit);
 	}
@@ -36,6 +40,33 @@ function buildArticlePayload(body, { partial = false } = {}) {
 	if (body.article_pic !== undefined) {
 		payload.article_pic = optionalString(body, 'article_pic', '文章封面', { max: 255 }) || '';
 	}
+	if (body.category_id !== undefined || !partial) {
+		payload.category_id = optionalInt(body.category_id, 0, '分类ID');
+	}
+	if (body.article_summary !== undefined) {
+		payload.article_summary = optionalString(body, 'article_summary', '文章摘要', { max: 500 }) || '';
+	}
+	if (body.article_slug !== undefined) {
+		payload.article_slug = optionalSlug(body, 'article_slug', '文章别名', { max: 120 }) || '';
+	}
+	if (body.seo_title !== undefined) {
+		payload.seo_title = optionalString(body, 'seo_title', 'SEO 标题', { max: 120 }) || '';
+	}
+	if (body.seo_keywords !== undefined) {
+		payload.seo_keywords = optionalString(body, 'seo_keywords', 'SEO 关键词', { max: 255 }) || '';
+	}
+	if (body.seo_description !== undefined) {
+		payload.seo_description = optionalString(body, 'seo_description', 'SEO 描述', { max: 255 }) || '';
+	}
+	if (body.sort !== undefined || !partial) {
+		payload.sort = optionalInt(body.sort, 0, '排序值');
+	}
+	if (body.is_top !== undefined || !partial) {
+		payload.is_top = normalizeBooleanFlag(body.is_top, 0, '置顶状态');
+	}
+	if (body.is_recommend !== undefined || !partial) {
+		payload.is_recommend = normalizeBooleanFlag(body.is_recommend, 0, '推荐状态');
+	}
 	if (body.status !== undefined || !partial) {
 		payload.status = normalizeStatus(body.status, { defaultValue: 1 });
 	}
@@ -49,11 +80,17 @@ class ArticleController {
 	static async list(ctx) {
 		const { page, pageSize } = pagination(ctx.query);
 		const tag_id = ctx.query.tag_id ? positiveInt(ctx.query.tag_id, '标签ID') : undefined;
+		const category_id = ctx.query.category_id ? positiveInt(ctx.query.category_id, '分类ID') : undefined;
+		const recommend = ctx.query.recommend === undefined || ctx.query.recommend === ''
+			? undefined
+			: normalizeBooleanFlag(ctx.query.recommend, 0, '推荐状态');
 		const raw = await ArticleModel.getPublicArticlePage({
 			page,
 			pageSize,
 			keyword: ctx.query.keyword,
 			tag_id,
+			category_id,
+			recommend,
 		});
 		const data = {
 			...raw,
@@ -110,10 +147,11 @@ class ArticleController {
 	}
 
 	static async detail(ctx) {
-		const id = positiveInt(ctx.query.id, '文章ID');
+		const id = ctx.query.id || ctx.query.slug;
+		if (!id) throw new ParameterException('文章ID或别名不能为空');
 		const raw = await ArticleModel.getArticleDetail(id);
 		if (!raw) throw new NotFound('文章不存在');
-		await ArticleModel.incrementArticleView(id);
+		await ArticleModel.incrementArticleView(raw.id);
 		const data = normalizeArticle(toPlain(raw), { contentLimit: 0, withUpdateTime: true });
 		data.article_view = Number(data.article_view || 0) + 1;
 		success(ctx, data, '查询成功');

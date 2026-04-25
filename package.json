@@ -7,7 +7,8 @@
     "start": "node bin/www",
     "dev": "nodemon bin/www",
     "prd": "pm2 start bin/www",
-    "check": "node --check app.js && node --check bin/www && node --check routes/index.js"
+    "check": "node --check app.js && node --check bin/www && node --check routes/index.js",
+    "test:integration": "node scripts/integration-test.js"
   },
   "dependencies": {
     "@koa/router": "^15.4.0",

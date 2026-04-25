@@ -10,18 +10,22 @@ import serve from 'koa-static';
 import config from './config/config.js';
 import index from './routes/index.js';
 import catchError from './middlewres/exception.js';
+import { rateLimit } from './middlewres/rateLimit.js';
+import { requestLog } from './middlewres/requestLog.js';
 
 const app = new Koa();
 
 onerror(app);
 
 app.use(catchError);
+app.use(requestLog());
 app.use(cors({
 	origin: config.cors.origin,
 	credentials: config.cors.credentials,
 	allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
 	allowHeaders: ['Content-Type', 'Authorization'],
 }));
+app.use(rateLimit());
 app.use(bodyparser({
 	enableTypes: ['json', 'form', 'text'],
 	jsonLimit: config.bodyLimit,
