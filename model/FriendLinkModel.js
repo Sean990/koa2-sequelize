@@ -1,39 +1,70 @@
-/**
- ├── modules
- └── FriendLinkModel.js
- */
-const db = require('../config/db');
-// 引入Sequelize对象
-const Sequelize = db.sequelize;
+import { DataTypes, Op } from 'sequelize';
+import { sequelize } from '../config/db.js';
+import cmsFriendLink from '../schema/cms_friendlink.js';
+import { now } from '../utils/format.js';
 
-// 引入上一步的文章数据表模型文件
-const FriendLink = Sequelize.import('../schema/z_friendlink');
+const FriendLink = cmsFriendLink(sequelize, DataTypes);
 
 class FriendLinkModel {
-    /**
-     * 创建友情链接模型
-     * @param data
-     * @returns {Promise<*>}
-     */
-    static async createFriendLink(data) {
-        return FriendLink.create({
-            friendlink_url: data.friendlink_url,
-            friendlink_title: data.friendlink_title,
-            create_time: parseInt((new Date().getTime() / 1000).toString()),
-            update_time: parseInt((new Date().getTime() / 1000).toString())
-        });
-    }
+	static get raw() {
+		return FriendLink;
+	}
 
-    /**
-     * 查询友情链接列表
-     * @returns {Promise<<Model[]>>}
-     */
-    static async getFriendLinkList() {
-        return FriendLink.findAll({
-            where: {status: 1},
-            limit: 10
-        })
-    }
+	static async createFriendLink(data) {
+		const ts = now();
+		return FriendLink.create({
+			friendlink_url: data.friendlink_url,
+			friendlink_title: data.friendlink_title,
+			status: data.status ?? 1,
+			create_time: ts,
+			update_time: ts,
+		});
+	}
+
+	static async updateFriendLink(id, data) {
+		const patch = { update_time: now() };
+		if (data.friendlink_url !== undefined) patch.friendlink_url = data.friendlink_url;
+		if (data.friendlink_title !== undefined) patch.friendlink_title = data.friendlink_title;
+		if (data.status !== undefined) patch.status = data.status;
+		return FriendLink.update(patch, { where: { id } });
+	}
+
+	static async deleteFriendLink(id) {
+		return FriendLink.update(
+			{ status: 0, update_time: now() },
+			{ where: { id, status: { [Op.ne]: 0 } } }
+		);
+	}
+
+	static async getFriendLinkList() {
+		return FriendLink.findAll({
+			where: { status: 1 },
+			limit: 50,
+			order: [['id', 'DESC']],
+		});
+	}
+
+	static async getAdminFriendLinkList({ page = 1, pageSize = 20, keyword = '', status } = {}) {
+		const where = {};
+		if (keyword) {
+			where[Op.or] = [
+				{ friendlink_title: { [Op.like]: `%${keyword}%` } },
+				{ friendlink_url: { [Op.like]: `%${keyword}%` } },
+			];
+		}
+		if (status !== undefined && status !== '') where.status = status;
+		const { count, rows } = await FriendLink.findAndCountAll({
+			where,
+			order: [['id', 'DESC']],
+			offset: (page - 1) * pageSize,
+			limit: pageSize,
+		});
+		return { count, rows, page, pageSize };
+	}
+
+	static async countActiveFriendLinks() {
+		return FriendLink.count({ where: { status: 1 } });
+	}
 }
 
-module.exports = FriendLinkModel
+export default FriendLinkModel;

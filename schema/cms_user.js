@@ -1,11 +1,18 @@
-module.exports = function (sequelize, DataTypes) {
+export default function (sequelize, DataTypes) {
 	return sequelize.define(
-		'z_user',
+		'cms_user',
 		{
 			id: {
 				type: DataTypes.INTEGER(11).UNSIGNED,
 				allowNull: false,
 				primaryKey: true,
+				autoIncrement: true,
+			},
+			username: {
+				type: DataTypes.STRING(32),
+				allowNull: false,
+				defaultValue: '',
+				unique: true,
 			},
 			nickname: {
 				type: DataTypes.STRING(20),
@@ -47,8 +54,8 @@ module.exports = function (sequelize, DataTypes) {
 				allowNull: false,
 				defaultValue: '',
 			},
-			passwrod: {
-				type: DataTypes.STRING(20),
+			password: {
+				type: DataTypes.STRING(255),
 				allowNull: false,
 				defaultValue: '',
 			},
@@ -56,6 +63,11 @@ module.exports = function (sequelize, DataTypes) {
 				type: DataTypes.STRING(255),
 				allowNull: false,
 				defaultValue: '',
+			},
+			role: {
+				type: DataTypes.STRING(16),
+				allowNull: false,
+				defaultValue: 'user',
 			},
 			sex: {
 				type: DataTypes.INTEGER(1),
@@ -84,7 +96,7 @@ module.exports = function (sequelize, DataTypes) {
 			},
 		},
 		{
-			tableName: 'z_user',
+			tableName: 'cms_user',
 		}
 	);
 };

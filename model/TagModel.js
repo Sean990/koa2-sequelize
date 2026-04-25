@@ -1,38 +1,65 @@
-/**
- ├── modules
- └── TagModel.js
- */
-const db = require('../config/db');
-// 引入Sequelize对象
-const Sequelize = db.sequelize;
+import { DataTypes, Op } from 'sequelize';
+import { sequelize } from '../config/db.js';
+import cmsTag from '../schema/cms_tag.js';
+import { now } from '../utils/format.js';
 
-// 引入上一步的文章数据表模型文件
-const Tag = Sequelize.import('../schema/z_tag');
+const Tag = cmsTag(sequelize, DataTypes);
 
 class TagModel {
-    /**
-     * 创建标签模型
-     * @param data
-     * @returns {Promise<*>}
-     */
-    static async createTag(data) {
-        return Tag.create({
-            tag_title: data.tag_title,
-            create_time: parseInt((new Date().getTime() / 1000).toString()),
-            update_time: parseInt((new Date().getTime() / 1000).toString())
-        });
-    }
+	static get raw() {
+		return Tag;
+	}
 
-    /**
-     * 查询标签列表
-     * @returns {Promise<<Model[]>>}
-     */
-    static async getTagList() {
-        return Tag.findAll({
-            where: {status: 1},
-            limit: 10
-        })
-    }
+	static async createTag(data) {
+		const ts = now();
+		return Tag.create({
+			tag_title: data.tag_title,
+			status: data.status ?? 1,
+			create_time: ts,
+			update_time: ts,
+		});
+	}
+
+	static async updateTag(id, data) {
+		const patch = { update_time: now() };
+		if (data.tag_title !== undefined) patch.tag_title = data.tag_title;
+		if (data.status !== undefined) patch.status = data.status;
+		return Tag.update(patch, { where: { id } });
+	}
+
+	static async deleteTag(id) {
+		return Tag.update(
+			{ status: 0, update_time: now() },
+			{ where: { id, status: { [Op.ne]: 0 } } }
+		);
+	}
+
+	static async findByTitle(tagTitle, { includeDisabled = false } = {}) {
+		const where = { tag_title: tagTitle };
+		if (!includeDisabled) where.status = 1;
+		return Tag.findOne({ where });
+	}
+
+	static async getTagList() {
+		return Tag.findAll({
+			where: { status: 1 },
+			limit: 100,
+			order: [['id', 'DESC']],
+		});
+	}
+
+	static async getAdminTagList({ page = 1, pageSize = 20, keyword = '', status } = {}) {
+		const where = {};
+		if (keyword) where.tag_title = { [Op.like]: `%${keyword}%` };
+		if (status !== undefined && status !== '') where.status = status;
+		const { count, rows } = await Tag.findAndCountAll({
+			where,
+			order: [['id', 'DESC']],
+			offset: (page - 1) * pageSize,
+			limit: pageSize,
+		});
+		return { count, rows, page, pageSize };
+	}
 }
 
-module.exports = TagModel
+export default TagModel;

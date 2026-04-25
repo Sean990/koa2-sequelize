@@ -1,86 +1,52 @@
-/**
- ├── controllers
- └── Index.js
- */
-const ArticleModel = require('../model/ArticleModel')
-const moment = require('moment')
+import ArticleModel from '../model/ArticleModel.js';
+import FriendLinkModel from '../model/FriendLinkModel.js';
+import UserModel from '../model/UserModel.js';
+import { success } from '../utils/response.js';
+import { excerpt, formatDate, formatDateTime, toPlain } from '../utils/format.js';
 
-class IndexController {
-    static async Index(ctx){
-        try {
-            // 查询文章详情模型
-            let data = JSON.parse(JSON.stringify(await ArticleModel.getArticleList(10)));
-
-            for (let index in data) {
-                if (data.hasOwnProperty(index)) {
-                    let item = data[index];
-                    if(item.article_cont.length > 320){
-                        item.article_cont = item.article_cont.substr(0,300) + '...';
-                    }
-                    item['tags'] = item['z_tags'];
-                    item['user'] = item['z_user'];
-                    delete item['z_tags'];
-                    delete item['z_user'];
-                    item.detail_time = moment(item.create_time * 1000).format('YYYY年MM月DD日hh时mm分')
-                    item.create_time = moment(item.create_time * 1000).format('YYYY年MM月DD日')
-                }
-            }
-
-            ctx.response.status = 200;
-            ctx.body = {
-                code: 200,
-                msg: '查询成功',
-                data
-            }
-
-        } catch (err) {
-            ctx.response.status = 412;
-            ctx.body = {
-                code: 412,
-                msg: '查询失败',
-                err
-            }
-        }
-    }
-
-    /**
-     * 最近的文章
-     * @param ctx
-     * @returns {Promise<void>}
-     * @constructor
-     */
-    static async Recent(ctx){
-        try {
-            // 查询文章详情模型
-            let data = JSON.parse(JSON.stringify(await ArticleModel.getArticleList(3)));
-
-            for (let index in data) {
-                if (data.hasOwnProperty(index)) {
-                    let item = data[index];
-                    delete item['article_cont'];
-                    delete item['z_tags'];
-                    delete item['z_user'];
-                    item.detail_time = moment(item.create_time * 1000).format('YYYY年MM月DD日hh时mm分')
-                    item.create_time = moment(item.create_time * 1000).format('YYYY年MM月DD日')
-                }
-            }
-
-            ctx.response.status = 200;
-            ctx.body = {
-                code: 200,
-                msg: '查询成功',
-                data
-            }
-
-        } catch (err) {
-            ctx.response.status = 412;
-            ctx.body = {
-                code: 412,
-                msg: '查询失败',
-                err
-            }
-        }
-    }
+function normalizeIndexArticle(item, { withContent = true } = {}) {
+	item.tags = item.tags || [];
+	item.user = item.user || null;
+	if (!withContent) {
+		delete item.article_cont;
+	} else {
+		item.article_cont = excerpt(item.article_cont, 300);
+	}
+	item.detail_time = formatDateTime(item.create_time);
+	item.create_time = formatDate(item.create_time);
+	return item;
 }
 
-module.exports = IndexController;
+class IndexController {
+	static async Index(ctx) {
+		const data = toPlain(await ArticleModel.getArticleList(10))
+			.map((item) => normalizeIndexArticle(item));
+		success(ctx, data, '查询成功');
+	}
+
+	static async Recent(ctx) {
+		const data = toPlain(await ArticleModel.getArticleList(3))
+			.map((item) => normalizeIndexArticle(item, { withContent: false }));
+		success(ctx, data, '查询成功');
+	}
+
+	static async Dashboard(ctx) {
+		const [articleStats, userCount, friendLinkCount] = await Promise.all([
+			ArticleModel.getDashboardStats(),
+			UserModel.countActiveUsers(),
+			FriendLinkModel.countActiveFriendLinks(),
+		]);
+		const data = {
+			...articleStats,
+			userCount,
+			friendLinkCount,
+			recentArticles: toPlain(articleStats.recentArticles).map((item) => ({
+				...item,
+				create_time: formatDate(item.create_time),
+			})),
+		};
+		success(ctx, data, '查询成功');
+	}
+}
+
+export default IndexController;

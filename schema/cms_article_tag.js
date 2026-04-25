@@ -1,13 +1,18 @@
-module.exports = function (sequelize, DataTypes) {
+export default function (sequelize, DataTypes) {
 	return sequelize.define(
-		'z_article',
+		'cms_article_tag',
 		{
 			id: {
 				type: DataTypes.INTEGER(11).UNSIGNED,
 				allowNull: false,
 				primaryKey: true,
+				autoIncrement: true,
 			},
-			user_id: {
+			article_id: {
+				type: DataTypes.INTEGER(11).UNSIGNED,
+				allowNull: false,
+			},
+			tag_id: {
 				type: DataTypes.INTEGER(11).UNSIGNED,
 				allowNull: false,
 			},
@@ -15,25 +20,6 @@ module.exports = function (sequelize, DataTypes) {
 				type: DataTypes.INTEGER(1),
 				allowNull: false,
 				defaultValue: '1',
-			},
-			article_pic: {
-				type: DataTypes.STRING(255),
-				allowNull: false,
-				defaultValue: '',
-			},
-			article_title: {
-				type: DataTypes.STRING(30),
-				allowNull: false,
-				defaultValue: '',
-			},
-			article_cont: {
-				type: DataTypes.TEXT,
-				allowNull: false,
-			},
-			article_view: {
-				type: DataTypes.INTEGER(11).UNSIGNED,
-				allowNull: false,
-				defaultValue: '0',
 			},
 			create_time: {
 				type: DataTypes.INTEGER(11).UNSIGNED,
@@ -47,7 +33,7 @@ module.exports = function (sequelize, DataTypes) {
 			},
 		},
 		{
-			tableName: 'z_article',
+			tableName: 'cms_article_tag',
 		}
 	);
 };

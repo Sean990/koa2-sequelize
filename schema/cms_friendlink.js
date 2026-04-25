@@ -1,14 +1,20 @@
-module.exports = function (sequelize, DataTypes) {
+export default function (sequelize, DataTypes) {
 	return sequelize.define(
-		'z_tag',
+		'cms_friendlink',
 		{
 			id: {
 				type: DataTypes.INTEGER(11).UNSIGNED,
 				allowNull: false,
 				primaryKey: true,
+				autoIncrement: true,
 			},
-			tag_title: {
-				type: DataTypes.STRING(10),
+			friendlink_url: {
+				type: DataTypes.STRING(255),
+				allowNull: false,
+				defaultValue: '',
+			},
+			friendlink_title: {
+				type: DataTypes.STRING(60),
 				allowNull: false,
 				defaultValue: '',
 			},
@@ -29,7 +35,7 @@ module.exports = function (sequelize, DataTypes) {
 			},
 		},
 		{
-			tableName: 'z_tag',
+			tableName: 'cms_friendlink',
 		}
 	);
 };

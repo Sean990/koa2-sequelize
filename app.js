@@ -1,41 +1,48 @@
-const Koa = require('koa');
-const cors = require('koa2-cors');
-const json = require('koa-json');
-const onerror = require('koa-onerror');
-const bodyparser = require('koa-bodyparser');
-const logger = require('koa-logger');
-const reflect = require("reflect-metadata");
+import path from 'node:path';
+import Koa from 'koa';
+import cors from 'koa2-cors';
+import json from 'koa-json';
+import onerror from 'koa-onerror';
+import bodyparser from 'koa-bodyparser';
+import logger from 'koa-logger';
+import serve from 'koa-static';
 
-const index = require('./routes');
+import config from './config/config.js';
+import index from './routes/index.js';
+import catchError from './middlewres/exception.js';
 
 const app = new Koa();
-app.use(cors());
 
-// error handler
 onerror(app);
 
-// middlewares
+app.use(catchError);
+app.use(cors({
+	origin: config.cors.origin,
+	credentials: config.cors.credentials,
+	allowMethods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+	allowHeaders: ['Content-Type', 'Authorization'],
+}));
 app.use(bodyparser({
-  enableTypes:['json', 'form', 'text']
+	enableTypes: ['json', 'form', 'text'],
+	jsonLimit: config.bodyLimit,
+	formLimit: config.bodyLimit,
+	textLimit: config.bodyLimit,
 }));
 app.use(json());
 app.use(logger());
-app.use(require('koa-static')(__dirname + '/public'));
+app.use(serve(path.join(import.meta.dirname, 'public')));
 
-// logger
 app.use(async (ctx, next) => {
-  const start = new Date();
-  await next();
-  const ms = new Date() - start;
-  console.log(`${ctx.method} ${ctx.url} - ${ms}ms`)
+	const start = Date.now();
+	await next();
+	const ms = Date.now() - start;
+	console.log(`${ctx.method} ${ctx.url} - ${ms}ms`);
 });
 
-// routes
 app.use(index.routes(), index.allowedMethods());
 
-// error-handling
 app.on('error', (err, ctx) => {
-  console.error('server error', err, ctx)
+	console.error('server error', err, ctx);
 });
 
-module.exports = app;
+export default app;

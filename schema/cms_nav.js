@@ -1,11 +1,12 @@
-module.exports = function (sequelize, DataTypes) {
+export default function (sequelize, DataTypes) {
 	return sequelize.define(
-		'z_nav',
+		'cms_nav',
 		{
 			id: {
 				type: DataTypes.INTEGER(11).UNSIGNED,
 				allowNull: false,
 				primaryKey: true,
+				autoIncrement: true,
 			},
 			nav_name: {
 				type: DataTypes.STRING(10),
@@ -29,7 +30,7 @@ module.exports = function (sequelize, DataTypes) {
 			},
 		},
 		{
-			tableName: 'z_nav',
+			tableName: 'cms_nav',
 		}
 	);
 };

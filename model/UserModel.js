@@ -1,62 +1,113 @@
-/**
- ├── modules
- └── UserModel.js
- */
-const db = require('../config/db');
-// 引入Sequelize对象
-const Sequelize = db.sequelize;
+import { DataTypes, Op } from 'sequelize';
+import { sequelize } from '../config/db.js';
+import cmsUser from '../schema/cms_user.js';
+import { now } from '../utils/format.js';
 
-const User = Sequelize.import('../schema/z_user');
+const User = cmsUser(sequelize, DataTypes);
+
+const SAFE_ATTRS_EXCLUDE = ['realname', 'password'];
+const ADMIN_SAFE_EXCLUDE = ['password'];
 
 class UserModel {
-	/**
-	 * 创建用户模型
-	 * @param data
-	 * @returns {Promise<<Model<T, T2>>>}
-	 */
+	static get raw() {
+		return User;
+	}
+
 	static async createUser(data) {
+		const ts = now();
 		return User.create({
-			nickname: data.nickname,
-			realname: data.realname,
+			username: data.username,
+			nickname: data.nickname ?? data.username,
+			realname: data.realname ?? '',
 			password: data.password,
-			avatar: data.avatar,
-			sex: data.sex,
-			birthday: data.birthday,
-			create_time: parseInt((new Date().getTime() / 1000).toString()),
-			update_time: parseInt((new Date().getTime() / 1000).toString()),
+			avatar: data.avatar ?? '',
+			role: data.role ?? 'user',
+			sex: data.sex ?? 0,
+			birthday: data.birthday ?? 0,
+			status: data.status ?? 1,
+			create_time: ts,
+			update_time: ts,
 		});
 	}
 
-	/**
-	 * 查询取用户信息
-	 * @param id  文章ID
-	 * @returns {Promise<<Model<T, T2> | null>>}
-	 */
-	static async getUserInfo(id) {
+	static async updateUser(id, data) {
+		const allowed = [
+			'nickname',
+			'realname',
+			'avatar',
+			'role',
+			'status',
+			'sex',
+			'birthday',
+			'github_nickname',
+			'github_link',
+			'qq_nickname',
+			'qq_link',
+			'music_nickname',
+			'music_link',
+		];
+		const patch = {};
+		for (const key of allowed) {
+			if (data[key] !== undefined) patch[key] = data[key];
+		}
+		patch.update_time = now();
+		return User.update(patch, { where: { id } });
+	}
+
+	static async updatePassword(id, hashed) {
+		return User.update(
+			{ password: hashed, update_time: now() },
+			{ where: { id, status: 1 } }
+		);
+	}
+
+	static async deleteUser(id) {
+		return User.update(
+			{ status: 0, update_time: now() },
+			{ where: { id, status: { [Op.ne]: 0 } } }
+		);
+	}
+
+	static async findByUsername(username) {
+		return User.findOne({ where: { username, status: 1 } });
+	}
+
+	static async findAnyByUsername(username) {
+		return User.findOne({ where: { username } });
+	}
+
+	static async getUserInfo(id, { includeDisabled = false } = {}) {
+		const where = { id };
+		if (!includeDisabled) where.status = 1;
 		return User.findOne({
-			exclude: ['realname', 'password'],
-			where: { id },
+			attributes: { exclude: SAFE_ATTRS_EXCLUDE },
+			where,
 		});
 	}
 
-	/**
-	 * 查询用户列表
-	 * @returns {Promise<<Model[]>>}
-	 */
-	static async getUserList() {
-		// 分页 page, pageSize
-		// 使用 findAndCountAll 代替 findAll
-		const { page = 1, pageSize = 10 } = ctx.request.body;
-		// 偏移量
-		let offset = (page - 1) * pageSize;
-		const { count, rows } = User.findAndCountAll({
-			exclude: ['realname', 'password'],
-			where: { status: 1 },
-			offset: offset, // 偏移量
-			limit: parseInt(pageSize), // 页容量
+	static async getUserList({ page = 1, pageSize = 10, keyword = '', includeDisabled = false } = {}) {
+		const offset = (page - 1) * pageSize;
+		const where = {};
+		if (!includeDisabled) where.status = 1;
+		if (keyword) {
+			where[Op.or] = [
+				{ username: { [Op.like]: `%${keyword}%` } },
+				{ nickname: { [Op.like]: `%${keyword}%` } },
+			];
+		}
+		const { count, rows } = await User.findAndCountAll({
+			attributes: { exclude: includeDisabled ? ADMIN_SAFE_EXCLUDE : SAFE_ATTRS_EXCLUDE },
+			where,
+			order: [['id', 'DESC']],
+			offset,
+			limit: pageSize,
 		});
-		return { count, rows, page };
+		return { count, rows, page, pageSize };
+	}
+
+	static async countActiveUsers() {
+		return User.count({ where: { status: 1 } });
 	}
 }
 
-module.exports = UserModel;
+export default UserModel;
