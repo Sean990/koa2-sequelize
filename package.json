@@ -5,8 +5,7 @@
   "scripts": {
     "start": "node bin/www",
     "dev": "./node_modules/.bin/nodemon bin/www",
-    "prd": "pm2 start bin/www",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "prd": "pm2 start bin/www"
   },
   "dependencies": {
     "@types/node": "^12.7.11",
@@ -25,7 +24,7 @@
     "mysql": "^2.17.1",
     "mysql2": "^1.7.0",
     "reflect-metadata": "^0.1.13",
-    "sequelize": "^5.18.4"
+    "sequelize": "^6.3.5"
   },
   "devDependencies": {
     "nodemon": "^1.19.1"
