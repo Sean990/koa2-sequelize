@@ -4,6 +4,7 @@ node_modules
 .env.local
 logs
 public/uploads
+backups
 
 # local env files
 .env.local

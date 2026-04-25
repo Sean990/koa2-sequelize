@@ -1,4 +1,4 @@
-import { DataTypes } from 'sequelize';
+import { DataTypes, Op } from 'sequelize';
 import { sequelize } from '../config/db.js';
 import cmsAuditLog from '../schema/cms_audit_log.js';
 import { now } from '../utils/format.js';
@@ -26,8 +26,28 @@ class AuditLogModel {
 		});
 	}
 
-	static async getLogList({ page = 1, pageSize = 20 } = {}) {
+	static async getLogList({
+		page = 1,
+		pageSize = 20,
+		username = '',
+		method = '',
+		path = '',
+		status,
+		start_time,
+		end_time,
+	} = {}) {
+		const where = {};
+		if (username) where.username = { [Op.like]: `%${username}%` };
+		if (method) where.method = String(method).toUpperCase();
+		if (path) where.path = { [Op.like]: `%${path}%` };
+		if (status !== undefined && status !== '') where.status = status;
+		if (start_time || end_time) {
+			where.create_time = {};
+			if (start_time) where.create_time[Op.gte] = start_time;
+			if (end_time) where.create_time[Op.lte] = end_time;
+		}
 		const { count, rows } = await AuditLog.findAndCountAll({
+			where,
 			order: [['id', 'DESC']],
 			offset: (page - 1) * pageSize,
 			limit: pageSize,

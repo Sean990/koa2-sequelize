@@ -1,8 +1,7 @@
 import path from 'node:path';
 import Koa from 'koa';
-import cors from 'koa2-cors';
+import cors from '@koa/cors';
 import json from 'koa-json';
-import onerror from 'koa-onerror';
 import bodyparser from 'koa-bodyparser';
 import logger from 'koa-logger';
 import serve from 'koa-static';
@@ -14,8 +13,6 @@ import { rateLimit } from './middlewres/rateLimit.js';
 import { requestLog } from './middlewres/requestLog.js';
 
 const app = new Koa();
-
-onerror(app);
 
 app.use(catchError);
 app.use(requestLog());

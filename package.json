@@ -8,9 +8,11 @@
     "dev": "nodemon bin/www",
     "prd": "pm2 start bin/www",
     "check": "node --check app.js && node --check bin/www && node --check routes/index.js",
-    "test:integration": "node scripts/integration-test.js"
+    "test:integration": "node scripts/integration-test.js",
+    "backup:db": "node scripts/backup-db.js"
   },
   "dependencies": {
+    "@koa/cors": "^5.0.0",
     "@koa/router": "^15.4.0",
     "@types/node": "^25.6.0",
     "debug": "^4.4.3",
@@ -18,12 +20,11 @@
     "koa-bodyparser": "^4.4.1",
     "koa-json": "^2.0.2",
     "koa-logger": "^3.2.1",
-    "koa-onerror": "^4.2.0",
     "koa-static": "^5.0.0",
-    "koa2-cors": "^2.0.6",
     "moment": "latest",
     "mysql2": "^3.22.2",
-    "sequelize": "^6.37.8"
+    "sequelize": "^6.37.8",
+    "swagger-ui-dist": "^5.32.4"
   },
   "devDependencies": {
     "nodemon": "^3.1.14"

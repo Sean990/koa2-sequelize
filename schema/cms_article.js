@@ -94,6 +94,12 @@ export default function (sequelize, DataTypes) {
 		},
 		{
 			tableName: 'cms_article',
+			indexes: [
+				{ fields: ['status', 'is_top', 'sort', 'id'] },
+				{ fields: ['category_id', 'status'] },
+				{ fields: ['article_slug'] },
+				{ fields: ['user_id'] },
+			],
 		}
 	);
 };

@@ -97,6 +97,10 @@ export default function (sequelize, DataTypes) {
 		},
 		{
 			tableName: 'cms_user',
+			indexes: [
+				{ fields: ['status'] },
+				{ fields: ['role'] },
+			],
 		}
 	);
 };

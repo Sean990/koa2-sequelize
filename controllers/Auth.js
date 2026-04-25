@@ -5,6 +5,7 @@ import { success } from '../utils/response.js';
 import { AuthFailed, NotFound } from '../utils/http-exception.js';
 import { requireString } from '../utils/validators.js';
 import config from '../config/config.js';
+import { hasPermission } from '../middlewres/auth.js';
 
 const loginFailures = new Map();
 
@@ -92,6 +93,7 @@ class AuthController {
 				nickname: user.nickname,
 				avatar: user.avatar,
 				role: user.role,
+				permissions: config.permissions[user.role] || [],
 			},
 		}, '登录成功');
 	}
@@ -100,7 +102,9 @@ class AuthController {
 		const uid = ctx.state.user?.uid;
 		const user = await UserModel.getUserInfo(uid);
 		if (!user) throw new NotFound('用户不存在');
-		success(ctx, user, '查询成功');
+		const data = user.toJSON ? user.toJSON() : user;
+		data.permissions = config.permissions[data.role] || [];
+		success(ctx, data, '查询成功');
 	}
 
 	static async refresh(ctx) {
@@ -110,6 +114,17 @@ class AuthController {
 		success(ctx, {
 			token: buildToken(user),
 		}, '刷新成功');
+	}
+
+	static async permissions(ctx) {
+		const role = ctx.state.user?.role;
+		const permission = ctx.query.permission;
+		success(ctx, {
+			role,
+			permissions: config.permissions[role] || [],
+			all: config.permissions,
+			can: permission ? hasPermission(role, permission) : undefined,
+		}, '查询成功');
 	}
 }
 

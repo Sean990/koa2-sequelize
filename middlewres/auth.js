@@ -24,3 +24,18 @@ export function requireRole(...roles) {
 		await next();
 	};
 }
+
+export function hasPermission(role, permission) {
+	const permissions = config.permissions?.[role] || [];
+	return permissions.includes('*') || permissions.includes(permission);
+}
+
+export function requirePermission(permission) {
+	return async (ctx, next) => {
+		const role = ctx.state.user?.role;
+		if (!hasPermission(role, permission)) {
+			throw new Forbidden('权限不足');
+		}
+		await next();
+	};
+}

@@ -46,6 +46,10 @@ export default function (sequelize, DataTypes) {
 		},
 		{
 			tableName: 'cms_category',
+			indexes: [
+				{ fields: ['status', 'sort'] },
+				{ fields: ['category_slug'] },
+			],
 		}
 	);
 }

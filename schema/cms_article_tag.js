@@ -34,6 +34,10 @@ export default function (sequelize, DataTypes) {
 		},
 		{
 			tableName: 'cms_article_tag',
+			indexes: [
+				{ fields: ['article_id'] },
+				{ fields: ['tag_id'] },
+			],
 		}
 	);
 };

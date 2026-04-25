@@ -36,6 +36,9 @@ export default function (sequelize, DataTypes) {
 		},
 		{
 			tableName: 'cms_friendlink',
+			indexes: [
+				{ fields: ['status'] },
+			],
 		}
 	);
 };

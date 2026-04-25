@@ -20,6 +20,7 @@ let tagId;
 let articleId;
 let friendLinkId;
 let uploadUrl;
+let settingId;
 
 async function request(apiPath, options = {}) {
 	const res = await fetch(`${baseUrl}${apiPath}`, {
@@ -51,6 +52,7 @@ async function cleanup() {
 		if (categoryId) await sequelize.query('DELETE FROM cms_category WHERE id = ?', { replacements: [categoryId] });
 		if (navId) await sequelize.query('DELETE FROM cms_nav WHERE id = ?', { replacements: [navId] });
 		if (friendLinkId) await sequelize.query('DELETE FROM cms_friendlink WHERE id = ?', { replacements: [friendLinkId] });
+		if (settingId) await sequelize.query('DELETE FROM cms_setting WHERE id = ?', { replacements: [settingId] });
 		if (userId) await sequelize.query('DELETE FROM cms_user WHERE id = ?', { replacements: [userId] });
 		await sequelize.query('DELETE FROM cms_audit_log WHERE username = ? OR request_body LIKE ?', {
 			replacements: [username, `%${marker}%`],
@@ -80,12 +82,16 @@ async function main() {
 	baseUrl = `http://127.0.0.1:${server.address().port}/api/v1`;
 
 	await request('/health');
+	await request('/openapi.json');
+	await request('/docs');
+	await request('/docs/assets/swagger-ui.css');
 	const login = await request('/auth/login', {
 		method: 'POST',
 		body: JSON.stringify({ username, password }),
 	});
 	token = login.body.data.token;
 	await request('/auth/refresh', { method: 'POST' });
+	await request('/auth/permissions?permission=article:write');
 
 	const category = await request('/admin/categories', {
 		method: 'POST',
@@ -120,6 +126,18 @@ async function main() {
 		}),
 	});
 	friendLinkId = friendLink.body.data.id;
+
+	const setting = await request('/admin/settings', {
+		method: 'POST',
+		body: JSON.stringify({
+			setting_key: `${marker}.site_name`,
+			setting_value: '接口验证站点',
+			value_type: 'string',
+			remark: marker,
+			is_public: 1,
+		}),
+	});
+	settingId = setting.body.data.id;
 
 	const upload = await request('/admin/uploads/base64', {
 		method: 'POST',
@@ -156,10 +174,13 @@ async function main() {
 	await request(`/article?slug=${marker}`);
 	await request('/categories');
 	await request('/navs');
+	await request('/settings');
+	await request('/admin/settings?page=1&pageSize=5');
+	await request('/admin/settings/map');
 	await request('/admin/articles?page=1&pageSize=5');
 	await request('/admin/dashboard');
 	await request('/admin/users?page=1&pageSize=5');
-	await request('/admin/audit_logs?page=1&pageSize=5');
+	await request(`/admin/audit_logs?page=1&pageSize=5&username=${encodeURIComponent(username)}&method=POST`);
 
 	console.log(JSON.stringify({
 		result: '真实数据库接口验证通过',
@@ -168,6 +189,7 @@ async function main() {
 		tagId,
 		navId,
 		friendLinkId,
+		settingId,
 		uploadUrl,
 	}, null, 2));
 }

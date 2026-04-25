@@ -1,4 +1,5 @@
 import UserModel from '../model/UserModel.js';
+import SettingModel from '../model/SettingModel.js';
 import { hashPassword, isPasswordHash } from '../utils/password.js';
 import config from '../config/config.js';
 
@@ -43,4 +44,26 @@ export async function ensureAdminUser() {
 	});
 	console.log(`[bootstrap] created default admin user "${username}" (id=${user.id}).`);
 	return user;
+}
+
+export async function ensureDefaultSettings() {
+	const defaults = [
+		{ setting_key: 'site.name', setting_value: 'Love Admin', remark: '站点名称' },
+		{ setting_key: 'site.description', setting_value: '个人博客 CMS', remark: '站点描述' },
+		{ setting_key: 'site.keywords', setting_value: 'blog,cms', remark: '站点关键词' },
+		{ setting_key: 'site.logo', setting_value: '', remark: '站点 Logo' },
+		{ setting_key: 'site.icp', setting_value: '', remark: 'ICP备案号' },
+	];
+
+	for (const item of defaults) {
+		const existing = await SettingModel.raw.findOne({ where: { setting_key: item.setting_key } });
+		if (!existing) {
+			await SettingModel.upsertSetting({
+				...item,
+				value_type: 'string',
+				is_public: 1,
+			});
+		}
+	}
+	console.log('[bootstrap] default public settings ensured.');
 }

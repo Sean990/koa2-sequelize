@@ -46,6 +46,9 @@ export default function (sequelize, DataTypes) {
 		},
 		{
 			tableName: 'cms_nav',
+			indexes: [
+				{ fields: ['status', 'sort'] },
+			],
 		}
 	);
 };

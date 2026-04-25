@@ -65,6 +65,12 @@ export default function (sequelize, DataTypes) {
 		},
 		{
 			tableName: 'cms_audit_log',
+			indexes: [
+				{ fields: ['username'] },
+				{ fields: ['method'] },
+				{ fields: ['status'] },
+				{ fields: ['create_time'] },
+			],
 		}
 	);
 }

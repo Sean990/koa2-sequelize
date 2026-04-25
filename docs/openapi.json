@@ -1,0 +1,388 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Love Admin CMS Service API",
+    "version": "0.2.0",
+    "description": "Love Admin CMS 后端接口文档。后台接口统一使用 Authorization: Bearer <token>。"
+  },
+  "servers": [
+    {
+      "url": "/api/v1"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    },
+    "schemas": {
+      "Response": {
+        "type": "object",
+        "properties": {
+          "code": { "type": "integer" },
+          "msg": { "type": "string" },
+          "data": {}
+        }
+      },
+      "ArticlePayload": {
+        "type": "object",
+        "required": ["article_title", "article_cont"],
+        "properties": {
+          "category_id": { "type": "integer" },
+          "article_title": { "type": "string" },
+          "article_cont": { "type": "string" },
+          "article_pic": { "type": "string" },
+          "article_summary": { "type": "string" },
+          "article_slug": { "type": "string" },
+          "seo_title": { "type": "string" },
+          "seo_keywords": { "type": "string" },
+          "seo_description": { "type": "string" },
+          "tag_ids": {
+            "type": "array",
+            "items": { "type": "integer" }
+          },
+          "status": { "type": "integer", "enum": [0, 1, 2] },
+          "is_top": { "type": "integer", "enum": [0, 1] },
+          "is_recommend": { "type": "integer", "enum": [0, 1] },
+          "sort": { "type": "integer" }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/health": {
+      "get": {
+        "summary": "健康检查",
+        "tags": ["System"],
+        "responses": {
+          "200": { "description": "服务正常" }
+        }
+      }
+    },
+    "/openapi.json": {
+      "get": {
+        "summary": "OpenAPI 文档 JSON",
+        "tags": ["System"],
+        "responses": {
+          "200": { "description": "OpenAPI JSON" }
+        }
+      }
+    },
+    "/docs": {
+      "get": {
+        "summary": "OpenAPI 可视化页面",
+        "tags": ["System"],
+        "responses": {
+          "200": { "description": "Swagger UI HTML" }
+        }
+      }
+    },
+    "/auth/login": {
+      "post": {
+        "summary": "后台登录",
+        "tags": ["Auth"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["username", "password"],
+                "properties": {
+                  "username": { "type": "string" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "登录成功" }
+        }
+      }
+    },
+    "/auth/me": {
+      "get": {
+        "summary": "当前用户信息",
+        "tags": ["Auth"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    },
+    "/auth/refresh": {
+      "post": {
+        "summary": "刷新 token",
+        "tags": ["Auth"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "刷新成功" } }
+      }
+    },
+    "/auth/permissions": {
+      "get": {
+        "summary": "当前权限",
+        "tags": ["Auth"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "permission", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    },
+    "/articles": {
+      "get": {
+        "summary": "公开文章分页",
+        "tags": ["Public"],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer" } },
+          { "name": "keyword", "in": "query", "schema": { "type": "string" } },
+          { "name": "tag_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "category_id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "recommend", "in": "query", "schema": { "type": "integer", "enum": [0, 1] } }
+        ],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    },
+    "/article": {
+      "get": {
+        "summary": "公开文章详情",
+        "tags": ["Public"],
+        "parameters": [
+          { "name": "id", "in": "query", "schema": { "type": "integer" } },
+          { "name": "slug", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    },
+    "/categories": {
+      "get": {
+        "summary": "公开分类列表",
+        "tags": ["Public"],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    },
+    "/navs": {
+      "get": {
+        "summary": "公开导航列表",
+        "tags": ["Public"],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    },
+    "/settings": {
+      "get": {
+        "summary": "公开站点设置",
+        "tags": ["Public"],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    },
+    "/tag_list": {
+      "get": {
+        "summary": "公开标签列表",
+        "tags": ["Public"],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    },
+    "/friend_link": {
+      "get": {
+        "summary": "公开友链列表",
+        "tags": ["Public"],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    },
+    "/archives": {
+      "get": {
+        "summary": "文章归档",
+        "tags": ["Public"],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    },
+    "/admin/dashboard": {
+      "get": {
+        "summary": "后台仪表盘",
+        "tags": ["Admin"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    },
+    "/admin/articles": {
+      "get": {
+        "summary": "后台文章分页",
+        "tags": ["Article"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer" } },
+          { "name": "pageSize", "in": "query", "schema": { "type": "integer" } },
+          { "name": "keyword", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "integer", "enum": [0, 1, 2] } }
+        ],
+        "responses": { "200": { "description": "查询成功" } }
+      },
+      "post": {
+        "summary": "创建文章",
+        "tags": ["Article"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ArticlePayload" }
+            }
+          }
+        },
+        "responses": { "201": { "description": "创建成功" } }
+      }
+    },
+    "/admin/articles/{id}": {
+      "put": {
+        "summary": "更新文章",
+        "tags": ["Article"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": { "$ref": "#/components/schemas/ArticlePayload" }
+            }
+          }
+        },
+        "responses": { "200": { "description": "更新成功" } }
+      },
+      "delete": {
+        "summary": "删除文章",
+        "tags": ["Article"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        ],
+        "responses": { "200": { "description": "删除成功" } }
+      }
+    },
+    "/admin/tags": {
+      "get": {
+        "summary": "后台标签分页",
+        "tags": ["Tag"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "查询成功" } }
+      },
+      "post": {
+        "summary": "创建标签",
+        "tags": ["Tag"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "创建成功" } }
+      }
+    },
+    "/admin/categories": {
+      "get": {
+        "summary": "后台分类分页",
+        "tags": ["Category"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "查询成功" } }
+      },
+      "post": {
+        "summary": "创建分类",
+        "tags": ["Category"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "创建成功" } }
+      }
+    },
+    "/admin/navs": {
+      "get": {
+        "summary": "后台导航分页",
+        "tags": ["Nav"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "查询成功" } }
+      },
+      "post": {
+        "summary": "创建导航",
+        "tags": ["Nav"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "创建成功" } }
+      }
+    },
+    "/admin/friend_links": {
+      "get": {
+        "summary": "后台友链分页",
+        "tags": ["FriendLink"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "查询成功" } }
+      },
+      "post": {
+        "summary": "创建友链",
+        "tags": ["FriendLink"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "创建成功" } }
+      }
+    },
+    "/admin/settings": {
+      "get": {
+        "summary": "后台设置分页",
+        "tags": ["Setting"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "查询成功" } }
+      },
+      "post": {
+        "summary": "保存设置",
+        "tags": ["Setting"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "保存成功" } }
+      }
+    },
+    "/admin/users": {
+      "get": {
+        "summary": "后台用户分页",
+        "tags": ["User"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "200": { "description": "查询成功" } }
+      },
+      "post": {
+        "summary": "创建用户",
+        "tags": ["User"],
+        "security": [{ "bearerAuth": [] }],
+        "responses": { "201": { "description": "创建成功" } }
+      }
+    },
+    "/admin/uploads/base64": {
+      "post": {
+        "summary": "base64 文件上传",
+        "tags": ["Upload"],
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "mime": { "type": "string" },
+                  "content": { "type": "string" },
+                  "dataUrl": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "201": { "description": "上传成功" } }
+      }
+    },
+    "/admin/audit_logs": {
+      "get": {
+        "summary": "审计日志分页",
+        "tags": ["AuditLog"],
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "username", "in": "query", "schema": { "type": "string" } },
+          { "name": "method", "in": "query", "schema": { "type": "string" } },
+          { "name": "path", "in": "query", "schema": { "type": "string" } },
+          { "name": "status", "in": "query", "schema": { "type": "integer" } },
+          { "name": "start_time", "in": "query", "schema": { "type": "string" } },
+          { "name": "end_time", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": { "200": { "description": "查询成功" } }
+      }
+    }
+  }
+}
