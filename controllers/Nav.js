@@ -34,6 +34,9 @@ function buildPayload(body, { partial = false } = {}) {
 	if (!partial || body.nav_url !== undefined) {
 		payload.nav_url = requireString(body, 'nav_url', '导航地址', { max: 255 });
 	}
+	if (body.nav_icon !== undefined) {
+		payload.nav_icon = optionalString(body, 'nav_icon', '导航图片', { max: 255 }) || '';
+	}
 	if (body.target !== undefined || !partial) payload.target = normalizeTarget(body.target);
 	if (body.sort !== undefined || !partial) payload.sort = optionalInt(body.sort, 0, '排序值');
 	if (body.status !== undefined || !partial) payload.status = normalizeStatus(body.status, { defaultValue: 1 });

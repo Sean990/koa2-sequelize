@@ -21,6 +21,14 @@ let articleId;
 let friendLinkId;
 let uploadUrl;
 let settingId;
+let siteImageBackups = [];
+
+function assertSafeIntegrationTarget() {
+	if (config.env === 'production') {
+		throw new Error('集成测试禁止在生产环境运行');
+	}
+	console.log(`[integration] target database: ${config.database.user}@${config.database.host}:${config.database.port}/${config.database.dbName}`);
+}
 
 async function request(apiPath, options = {}) {
 	const res = await fetch(`${baseUrl}${apiPath}`, {
@@ -44,6 +52,32 @@ async function request(apiPath, options = {}) {
 	return { status: res.status, body };
 }
 
+async function snapshotSetting(key) {
+	const [rows] = await sequelize.query('SELECT * FROM cms_setting WHERE setting_key = ? LIMIT 1', {
+		replacements: [key],
+	});
+	return rows[0] || null;
+}
+
+async function restoreSetting(row) {
+	if (!row) return;
+	await sequelize.query(
+		`UPDATE cms_setting
+		 SET setting_value = ?, value_type = ?, remark = ?, is_public = ?, update_time = ?
+		 WHERE id = ?`,
+		{
+			replacements: [
+				row.setting_value,
+				row.value_type,
+				row.remark,
+				row.is_public,
+				row.update_time,
+				row.id,
+			],
+		}
+	);
+}
+
 async function cleanup() {
 	try {
 		if (articleId) await sequelize.query('DELETE FROM cms_article_tag WHERE article_id = ?', { replacements: [articleId] });
@@ -53,6 +87,17 @@ async function cleanup() {
 		if (navId) await sequelize.query('DELETE FROM cms_nav WHERE id = ?', { replacements: [navId] });
 		if (friendLinkId) await sequelize.query('DELETE FROM cms_friendlink WHERE id = ?', { replacements: [friendLinkId] });
 		if (settingId) await sequelize.query('DELETE FROM cms_setting WHERE id = ?', { replacements: [settingId] });
+		const siteImageKeys = ['site.logo', 'site.banner', 'site.og_image'];
+		for (let i = 0; i < siteImageKeys.length; i += 1) {
+			const backup = siteImageBackups[i];
+			if (backup) {
+				await restoreSetting(backup);
+			} else {
+				await sequelize.query('DELETE FROM cms_setting WHERE setting_key = ?', {
+					replacements: [siteImageKeys[i]],
+				});
+			}
+		}
 		if (userId) await sequelize.query('DELETE FROM cms_user WHERE id = ?', { replacements: [userId] });
 		await sequelize.query('DELETE FROM cms_audit_log WHERE username = ? OR request_body LIKE ?', {
 			replacements: [username, `%${marker}%`],
@@ -67,6 +112,7 @@ async function cleanup() {
 }
 
 async function main() {
+	assertSafeIntegrationTarget();
 	await initDatabase();
 	const user = await UserModel.createUser({
 		username,
@@ -108,12 +154,28 @@ async function main() {
 	});
 	tagId = tag.body.data.id;
 
+	siteImageBackups = await Promise.all([
+		snapshotSetting('site.logo'),
+		snapshotSetting('site.banner'),
+		snapshotSetting('site.og_image'),
+	]);
+
+	const upload = await request('/admin/uploads/base64', {
+		method: 'POST',
+		body: JSON.stringify({
+			mime: 'image/png',
+			content: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+		}),
+	});
+	uploadUrl = upload.body.data.url;
+
 	const nav = await request('/admin/navs', {
 		method: 'POST',
 		body: JSON.stringify({
 			nav_name: marker.slice(0, 20),
 			nav_url: '/articles',
 			target: '_self',
+			nav_icon: uploadUrl,
 		}),
 	});
 	navId = nav.body.data.id;
@@ -123,6 +185,7 @@ async function main() {
 		body: JSON.stringify({
 			friendlink_title: marker.slice(0, 20),
 			friendlink_url: 'https://example.com',
+			friendlink_logo: uploadUrl,
 		}),
 	});
 	friendLinkId = friendLink.body.data.id;
@@ -139,14 +202,16 @@ async function main() {
 	});
 	settingId = setting.body.data.id;
 
-	const upload = await request('/admin/uploads/base64', {
+	await request('/admin/settings', {
 		method: 'POST',
 		body: JSON.stringify({
-			mime: 'image/png',
-			content: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
+			setting_key: 'site.logo',
+			setting_value: uploadUrl,
+			value_type: 'string',
+			remark: marker,
+			is_public: 1,
 		}),
 	});
-	uploadUrl = upload.body.data.url;
 
 	const article = await request('/admin/articles', {
 		method: 'POST',
@@ -176,7 +241,18 @@ async function main() {
 	await request('/navs');
 	await request('/settings');
 	await request('/admin/settings?page=1&pageSize=5');
-	await request('/admin/settings/map');
+	const navList = await request('/admin/navs?page=1&pageSize=5');
+	if (!navList.body.data.rows.some((item) => item.id === navId && item.nav_icon === uploadUrl)) {
+		throw new Error('nav_icon 未持久化');
+	}
+	const friendLinkList = await request('/admin/friend_links?page=1&pageSize=5');
+	if (!friendLinkList.body.data.rows.some((item) => item.id === friendLinkId && item.friendlink_logo === uploadUrl)) {
+		throw new Error('friendlink_logo 未持久化');
+	}
+	const settingsMap = await request('/admin/settings/map');
+	if (settingsMap.body.data['site.logo'] !== uploadUrl) {
+		throw new Error('site.logo 未写入');
+	}
 	await request('/admin/articles?page=1&pageSize=5');
 	await request('/admin/dashboard');
 	await request('/admin/users?page=1&pageSize=5');

@@ -15,6 +15,7 @@ class NavModel {
 		return Nav.create({
 			nav_name: data.nav_name,
 			nav_url: data.nav_url,
+			nav_icon: data.nav_icon ?? '',
 			target: data.target ?? '_self',
 			sort: data.sort ?? 0,
 			status: data.status ?? 1,
@@ -25,7 +26,7 @@ class NavModel {
 
 	static async updateNav(id, data) {
 		const patch = { update_time: now() };
-		for (const key of ['nav_name', 'nav_url', 'target', 'sort', 'status']) {
+		for (const key of ['nav_name', 'nav_url', 'nav_icon', 'target', 'sort', 'status']) {
 			if (data[key] !== undefined) patch[key] = data[key];
 		}
 		return Nav.update(patch, { where: { id } });

@@ -15,6 +15,7 @@ class FriendLinkModel {
 		return FriendLink.create({
 			friendlink_url: data.friendlink_url,
 			friendlink_title: data.friendlink_title,
+			friendlink_logo: data.friendlink_logo ?? '',
 			status: data.status ?? 1,
 			create_time: ts,
 			update_time: ts,
@@ -25,6 +26,7 @@ class FriendLinkModel {
 		const patch = { update_time: now() };
 		if (data.friendlink_url !== undefined) patch.friendlink_url = data.friendlink_url;
 		if (data.friendlink_title !== undefined) patch.friendlink_title = data.friendlink_title;
+		if (data.friendlink_logo !== undefined) patch.friendlink_logo = data.friendlink_logo;
 		if (data.status !== undefined) patch.status = data.status;
 		return FriendLink.update(patch, { where: { id } });
 	}

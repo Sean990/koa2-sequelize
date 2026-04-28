@@ -18,6 +18,11 @@ export default function (sequelize, DataTypes) {
 				allowNull: false,
 				defaultValue: '',
 			},
+			nav_icon: {
+				type: DataTypes.STRING(255),
+				allowNull: false,
+				defaultValue: '',
+			},
 			target: {
 				type: DataTypes.STRING(20),
 				allowNull: false,

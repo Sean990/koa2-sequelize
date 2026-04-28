@@ -18,6 +18,11 @@ export default function (sequelize, DataTypes) {
 				allowNull: false,
 				defaultValue: '',
 			},
+			friendlink_logo: {
+				type: DataTypes.STRING(255),
+				allowNull: false,
+				defaultValue: '',
+			},
 			status: {
 				type: DataTypes.INTEGER(1),
 				allowNull: false,

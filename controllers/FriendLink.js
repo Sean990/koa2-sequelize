@@ -3,6 +3,7 @@ import { created, empty, success } from '../utils/response.js';
 import { formatDate, toPlain } from '../utils/format.js';
 import {
 	normalizeStatus,
+	optionalString,
 	pagination,
 	positiveInt,
 	requireString,
@@ -45,7 +46,8 @@ class FriendLinkController {
 		const body = ctx.request.body || {};
 		const friendlink_url = requireUrl(body, 'friendlink_url', '友链地址');
 		const friendlink_title = requireString(body, 'friendlink_title', '友链名称', { max: 60 });
-		const link = await FriendLinkModel.createFriendLink({ friendlink_url, friendlink_title });
+		const friendlink_logo = optionalString(body, 'friendlink_logo', '友链 Logo', { max: 255 }) || '';
+		const link = await FriendLinkModel.createFriendLink({ friendlink_url, friendlink_title, friendlink_logo });
 		created(ctx, { id: link.id }, '创建成功');
 	}
 
@@ -58,6 +60,9 @@ class FriendLinkController {
 		}
 		if (body.friendlink_title !== undefined) {
 			payload.friendlink_title = requireString(body, 'friendlink_title', '友链名称', { max: 60 });
+		}
+		if (body.friendlink_logo !== undefined) {
+			payload.friendlink_logo = optionalString(body, 'friendlink_logo', '友链 Logo', { max: 255 }) || '';
 		}
 		if (body.status !== undefined) payload.status = normalizeStatus(body.status);
 		if (Object.keys(payload).length === 0) throw new ParameterException('没有可更新的内容');
