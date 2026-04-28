@@ -1,5 +1,6 @@
 import { mkdir, writeFile } from 'node:fs/promises';
 import path from 'node:path';
+import { projectRoot } from '../config/config.js';
 import { sequelize } from '../config/db.js';
 
 const TABLES = [
@@ -41,7 +42,7 @@ async function main() {
 		out.tables[table] = rows;
 	}
 
-	const dir = path.resolve('backups');
+	const dir = path.join(projectRoot, 'backups');
 	await mkdir(dir, { recursive: true });
 	const file = path.join(dir, `cms-backup-${timestamp()}.json`);
 	await writeFile(file, JSON.stringify(out, null, 2), 'utf8');

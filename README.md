@@ -2,12 +2,20 @@
 
 基于 Koa 3、Sequelize、MySQL 的博客 CMS 后端服务，包含公开内容接口和后台管理接口。
 
+## 环境要求
+
+- Node.js 22+
+- pnpm
+- MySQL
+
+项目启动时会自动读取根目录 `.env` 文件；如果系统环境变量已存在，同名 `.env` 变量不会覆盖系统环境变量。
+
 ## 已具备能力
 
-- 公开侧：文章列表、文章详情、归档、标签、分类、导航、友链、最近文章。
-- 后台侧：登录鉴权、仪表盘统计、文章管理、标签管理、分类管理、导航管理、友链管理、站点设置、用户管理、上传、审计日志。
+- 公开侧：文章列表、文章详情、归档、标签、分类、导航、友链、最近文章、首页文章、用户信息。
+- 后台侧：登录鉴权、token 刷新、权限查询、仪表盘统计、文章管理、标签管理、分类管理、导航管理、友链管理、站点设置、用户管理、上传、审计日志。
 - 内容能力：分页、搜索、草稿/发布/删除状态、浏览量、置顶、推荐、排序、SEO 字段、文章别名。
-- 安全基础：JWT、刷新 token、密码哈希、角色权限、权限元数据、登录失败锁定、接口限流、统一异常响应。
+- 安全基础：JWT、密码哈希、角色权限、权限元数据、登录失败锁定、接口限流、统一异常响应。
 - 运维基础：文件访问日志、错误日志、PM2 配置、环境变量样例、OpenAPI 接口文档、数据库备份脚本、真实数据库集成测试脚本。
 
 ## 启动
@@ -26,7 +34,7 @@ GET /api/v1/health
 
 ## 验证
 
-语法和入口检查：
+语法检查和 OpenAPI 路由覆盖检查：
 
 ```powershell
 pnpm run check
@@ -38,7 +46,7 @@ pnpm run check
 pnpm run test:integration
 ```
 
-该脚本会初始化 `cms_*` 表，创建临时测试数据，跑登录、刷新 token、分类、标签、导航、上传、文章、后台列表、审计日志等接口，然后清理测试数据。
+该脚本会初始化 `cms_*` 表，创建临时测试数据，跑登录、刷新 token、分类、标签、导航、上传、文章、后台列表、审计日志等接口，然后清理测试数据。执行前请确认 `.env` 指向的是可用于验证的数据库，建议使用独立测试库；脚本会拒绝在 `NODE_ENV=production` 下运行。
 
 数据库 JSON 备份：
 
@@ -77,6 +85,12 @@ DB_PASSWORD=<数据库密码>
 PM2 启动：
 
 ```powershell
+pnpm run prd
+```
+
+等价于：
+
+```powershell
 pm2 start ecosystem.config.cjs
 ```
 
@@ -84,19 +98,29 @@ pm2 start ecosystem.config.cjs
 
 ```text
 POST /api/v1/auth/login
+GET  /api/v1/auth/me
 POST /api/v1/auth/refresh
+GET  /api/v1/auth/permissions
 GET  /api/v1/articles?page=1&pageSize=10&keyword=
 GET  /api/v1/article?id=1
 GET  /api/v1/article?slug=hello-world
 GET  /api/v1/categories
 GET  /api/v1/navs
 GET  /api/v1/settings
+GET  /api/v1/tag_list
+GET  /api/v1/friend_link
+GET  /api/v1/recent
+GET  /api/v1/index
+GET  /api/v1/archives
 GET  /api/v1/openapi.json
 GET  /api/v1/docs
 GET  /api/v1/admin/dashboard
 GET  /api/v1/admin/articles
 POST /api/v1/admin/articles
+PUT  /api/v1/admin/articles/{id}
+DELETE /api/v1/admin/articles/{id}
 GET  /api/v1/admin/settings
+GET  /api/v1/admin/settings/map
 POST /api/v1/admin/settings
 POST /api/v1/admin/uploads/base64
 GET  /api/v1/admin/audit_logs
@@ -107,6 +131,8 @@ GET  /api/v1/admin/audit_logs
 ```text
 Authorization: Bearer <token>
 ```
+
+完整接口以 OpenAPI 文档为准。
 
 ## 上传接口
 

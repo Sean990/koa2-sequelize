@@ -146,6 +146,14 @@ class ArticleController {
 		success(ctx, data, '查询成功');
 	}
 
+	static async adminDetail(ctx) {
+		const id = positiveInt(ctx.params.id, '文章ID');
+		const raw = await ArticleModel.getAdminArticleDetail(id);
+		if (!raw) throw new NotFound('文章不存在');
+		const data = normalizeArticle(toPlain(raw), { contentLimit: 0, withUpdateTime: true });
+		success(ctx, data, '查询成功');
+	}
+
 	static async detail(ctx) {
 		const id = ctx.query.id || ctx.query.slug;
 		if (!id) throw new ParameterException('文章ID或别名不能为空');

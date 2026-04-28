@@ -120,7 +120,7 @@ class ArticleModel {
 
 	static async updateArticle(id, data) {
 		const article = await Article.findByPk(id);
-		if (!article || article.status === 0) return 0;
+		if (!article) return 0;
 
 		const allowed = [
 			'category_id',
@@ -188,6 +188,34 @@ class ArticleModel {
 					as: 'category',
 					attributes: publicCategoryAttrs,
 					where: { status: 1 },
+					required: false,
+				},
+			],
+		});
+	}
+
+	static async getAdminArticleDetail(id) {
+		return Article.findOne({
+			where: { id },
+			attributes: { exclude: ['user_id'] },
+			include: [
+				{
+					model: Tag,
+					as: 'tags',
+					attributes: publicTagAttrs,
+					through: { attributes: [] },
+					required: false,
+				},
+				{
+					model: User,
+					as: 'user',
+					attributes: publicUserAttrs,
+					required: false,
+				},
+				{
+					model: Category,
+					as: 'category',
+					attributes: publicCategoryAttrs,
 					required: false,
 				},
 			],

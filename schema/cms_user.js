@@ -12,7 +12,7 @@ export default function (sequelize, DataTypes) {
 				type: DataTypes.STRING(32),
 				allowNull: false,
 				defaultValue: '',
-				unique: true,
+
 			},
 			nickname: {
 				type: DataTypes.STRING(20),
@@ -98,6 +98,7 @@ export default function (sequelize, DataTypes) {
 		{
 			tableName: 'cms_user',
 			indexes: [
+				{ fields: ['username'], unique: true },
 				{ fields: ['status'] },
 				{ fields: ['role'] },
 			],

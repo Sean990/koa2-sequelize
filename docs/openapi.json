@@ -2,7 +2,7 @@
   "openapi": "3.0.3",
   "info": {
     "title": "Love Admin CMS Service API",
-    "version": "0.2.0",
+    "version": "0.3.0",
     "description": "Love Admin CMS 后端接口文档。后台接口统一使用 Authorization: Bearer <token>。"
   },
   "servers": [
@@ -18,12 +18,103 @@
         "bearerFormat": "JWT"
       }
     },
+    "parameters": {
+      "IdPath": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "schema": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "Page": {
+        "name": "page",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1
+        }
+      },
+      "PageSize": {
+        "name": "pageSize",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        }
+      },
+      "Keyword": {
+        "name": "keyword",
+        "in": "query",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "Status": {
+        "name": "status",
+        "in": "query",
+        "schema": {
+          "type": "integer",
+          "enum": [0, 1, 2]
+        }
+      }
+    },
+    "responses": {
+      "Success": {
+        "description": "操作成功",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Response"
+            }
+          }
+        }
+      },
+      "Created": {
+        "description": "创建成功",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Response"
+            }
+          }
+        }
+      },
+      "Empty": {
+        "description": "操作成功",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Response"
+            }
+          }
+        }
+      },
+      "Unauthorized": {
+        "description": "未登录或 token 无效"
+      },
+      "Forbidden": {
+        "description": "权限不足"
+      },
+      "NotFound": {
+        "description": "资源不存在"
+      }
+    },
     "schemas": {
       "Response": {
         "type": "object",
         "properties": {
-          "code": { "type": "integer" },
-          "msg": { "type": "string" },
+          "code": {
+            "type": "integer",
+            "example": 200
+          },
+          "msg": {
+            "type": "string",
+            "example": "查询成功"
+          },
           "data": {}
         }
       },
@@ -31,23 +122,249 @@
         "type": "object",
         "required": ["article_title", "article_cont"],
         "properties": {
-          "category_id": { "type": "integer" },
-          "article_title": { "type": "string" },
-          "article_cont": { "type": "string" },
-          "article_pic": { "type": "string" },
-          "article_summary": { "type": "string" },
-          "article_slug": { "type": "string" },
-          "seo_title": { "type": "string" },
-          "seo_keywords": { "type": "string" },
-          "seo_description": { "type": "string" },
+          "category_id": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "article_title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "article_cont": {
+            "type": "string"
+          },
+          "article_pic": {
+            "type": "string"
+          },
+          "article_summary": {
+            "type": "string",
+            "maxLength": 500
+          },
+          "article_slug": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "seo_title": {
+            "type": "string",
+            "maxLength": 120
+          },
+          "seo_keywords": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "seo_description": {
+            "type": "string",
+            "maxLength": 255
+          },
           "tag_ids": {
             "type": "array",
-            "items": { "type": "integer" }
+            "items": {
+              "type": "integer",
+              "minimum": 1
+            }
           },
-          "status": { "type": "integer", "enum": [0, 1, 2] },
-          "is_top": { "type": "integer", "enum": [0, 1] },
-          "is_recommend": { "type": "integer", "enum": [0, 1] },
-          "sort": { "type": "integer" }
+          "status": {
+            "type": "integer",
+            "enum": [0, 1, 2],
+            "description": "0 草稿，1 发布，2 删除"
+          },
+          "is_top": {
+            "type": "integer",
+            "enum": [0, 1]
+          },
+          "is_recommend": {
+            "type": "integer",
+            "enum": [0, 1]
+          },
+          "sort": {
+            "type": "integer"
+          }
+        }
+      },
+      "TagPayload": {
+        "type": "object",
+        "properties": {
+          "tag_title": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "status": {
+            "type": "integer",
+            "enum": [0, 1, 2]
+          }
+        }
+      },
+      "CategoryPayload": {
+        "type": "object",
+        "properties": {
+          "category_name": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "category_slug": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "description": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "integer",
+            "enum": [0, 1, 2]
+          }
+        }
+      },
+      "NavPayload": {
+        "type": "object",
+        "properties": {
+          "nav_name": {
+            "type": "string",
+            "maxLength": 30
+          },
+          "nav_url": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "target": {
+            "type": "string",
+            "enum": ["_self", "_blank"]
+          },
+          "sort": {
+            "type": "integer"
+          },
+          "status": {
+            "type": "integer",
+            "enum": [0, 1, 2]
+          }
+        }
+      },
+      "FriendLinkPayload": {
+        "type": "object",
+        "properties": {
+          "friendlink_title": {
+            "type": "string",
+            "maxLength": 60
+          },
+          "friendlink_url": {
+            "type": "string",
+            "format": "uri"
+          },
+          "status": {
+            "type": "integer",
+            "enum": [0, 1, 2]
+          }
+        }
+      },
+      "SettingPayload": {
+        "type": "object",
+        "properties": {
+          "setting_key": {
+            "type": "string",
+            "maxLength": 80
+          },
+          "setting_value": {},
+          "value_type": {
+            "type": "string",
+            "enum": ["string", "number", "boolean", "json"]
+          },
+          "remark": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "is_public": {
+            "type": "integer",
+            "enum": [0, 1]
+          }
+        }
+      },
+      "UserPayload": {
+        "type": "object",
+        "properties": {
+          "username": {
+            "type": "string",
+            "maxLength": 32
+          },
+          "password": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 128
+          },
+          "nickname": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "realname": {
+            "type": "string",
+            "maxLength": 20
+          },
+          "avatar": {
+            "type": "string",
+            "maxLength": 255
+          },
+          "sex": {
+            "type": "integer"
+          },
+          "birthday": {
+            "type": "integer"
+          },
+          "github_nickname": {
+            "type": "string"
+          },
+          "github_link": {
+            "type": "string"
+          },
+          "qq_nickname": {
+            "type": "string"
+          },
+          "qq_link": {
+            "type": "string"
+          },
+          "music_nickname": {
+            "type": "string"
+          },
+          "music_link": {
+            "type": "string"
+          },
+          "role": {
+            "type": "string",
+            "enum": ["admin", "editor", "user"]
+          },
+          "status": {
+            "type": "integer",
+            "enum": [0, 1, 2]
+          }
+        }
+      },
+      "PasswordPayload": {
+        "type": "object",
+        "required": ["password"],
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 128
+          }
+        }
+      },
+      "UploadPayload": {
+        "type": "object",
+        "properties": {
+          "mime": {
+            "type": "string",
+            "example": "image/png"
+          },
+          "content": {
+            "type": "string",
+            "description": "base64 内容"
+          },
+          "dataUrl": {
+            "type": "string",
+            "description": "data:image/png;base64,..."
+          }
         }
       }
     }
@@ -58,25 +375,289 @@
         "summary": "健康检查",
         "tags": ["System"],
         "responses": {
-          "200": { "description": "服务正常" }
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
         }
       }
     },
     "/openapi.json": {
       "get": {
-        "summary": "OpenAPI 文档 JSON",
+        "summary": "OpenAPI JSON",
         "tags": ["System"],
         "responses": {
-          "200": { "description": "OpenAPI JSON" }
+          "200": {
+            "description": "OpenAPI 文档"
+          }
         }
       }
     },
     "/docs": {
       "get": {
-        "summary": "OpenAPI 可视化页面",
+        "summary": "Swagger UI 页面",
         "tags": ["System"],
         "responses": {
-          "200": { "description": "Swagger UI HTML" }
+          "200": {
+            "description": "Swagger UI HTML"
+          }
+        }
+      }
+    },
+    "/docs/assets/{file}": {
+      "get": {
+        "summary": "Swagger UI 静态资源",
+        "tags": ["System"],
+        "parameters": [
+          {
+            "name": "file",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "静态资源文件"
+          }
+        }
+      }
+    },
+    "/tag_list": {
+      "get": {
+        "summary": "公开标签列表",
+        "tags": ["Public"],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
+      }
+    },
+    "/user_list": {
+      "get": {
+        "summary": "公开用户分页",
+        "tags": ["Public"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Keyword"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
+      }
+    },
+    "/user_info": {
+      "get": {
+        "summary": "公开用户详情",
+        "tags": ["Public"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/friend_link": {
+      "get": {
+        "summary": "公开友链列表",
+        "tags": ["Public"],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
+      }
+    },
+    "/categories": {
+      "get": {
+        "summary": "公开分类列表",
+        "tags": ["Public"],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
+      }
+    },
+    "/navs": {
+      "get": {
+        "summary": "公开导航列表",
+        "tags": ["Public"],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
+      }
+    },
+    "/settings": {
+      "get": {
+        "summary": "公开站点设置",
+        "tags": ["Public"],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
+      }
+    },
+    "/recent": {
+      "get": {
+        "summary": "最近文章",
+        "tags": ["Public"],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
+      }
+    },
+    "/index": {
+      "get": {
+        "summary": "首页文章列表",
+        "tags": ["Public"],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
+      }
+    },
+    "/articles": {
+      "get": {
+        "summary": "公开文章分页",
+        "tags": ["Public"],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Keyword"
+          },
+          {
+            "name": "tag_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "category_id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "recommend",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "enum": [0, 1]
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
+      }
+    },
+    "/article": {
+      "get": {
+        "summary": "公开文章详情",
+        "tags": ["Public"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          },
+          {
+            "name": "slug",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/tag_to_article": {
+      "get": {
+        "summary": "标签关联文章",
+        "tags": ["Public"],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/archives": {
+      "get": {
+        "summary": "文章归档",
+        "tags": ["Public"],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
         }
       }
     },
@@ -92,15 +673,24 @@
                 "type": "object",
                 "required": ["username", "password"],
                 "properties": {
-                  "username": { "type": "string" },
-                  "password": { "type": "string" }
+                  "username": {
+                    "type": "string"
+                  },
+                  "password": {
+                    "type": "string"
+                  }
                 }
               }
             }
           }
         },
         "responses": {
-          "200": { "description": "登录成功" }
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
         }
       }
     },
@@ -108,280 +698,986 @@
       "get": {
         "summary": "当前用户信息",
         "tags": ["Auth"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "查询成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
       }
     },
     "/auth/refresh": {
       "post": {
         "summary": "刷新 token",
         "tags": ["Auth"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "刷新成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
       }
     },
     "/auth/permissions": {
       "get": {
         "summary": "当前权限",
         "tags": ["Auth"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name": "permission", "in": "query", "schema": { "type": "string" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
         ],
-        "responses": { "200": { "description": "查询成功" } }
-      }
-    },
-    "/articles": {
-      "get": {
-        "summary": "公开文章分页",
-        "tags": ["Public"],
         "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer" } },
-          { "name": "pageSize", "in": "query", "schema": { "type": "integer" } },
-          { "name": "keyword", "in": "query", "schema": { "type": "string" } },
-          { "name": "tag_id", "in": "query", "schema": { "type": "integer" } },
-          { "name": "category_id", "in": "query", "schema": { "type": "integer" } },
-          { "name": "recommend", "in": "query", "schema": { "type": "integer", "enum": [0, 1] } }
+          {
+            "name": "permission",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
         ],
-        "responses": { "200": { "description": "查询成功" } }
-      }
-    },
-    "/article": {
-      "get": {
-        "summary": "公开文章详情",
-        "tags": ["Public"],
-        "parameters": [
-          { "name": "id", "in": "query", "schema": { "type": "integer" } },
-          { "name": "slug", "in": "query", "schema": { "type": "string" } }
-        ],
-        "responses": { "200": { "description": "查询成功" } }
-      }
-    },
-    "/categories": {
-      "get": {
-        "summary": "公开分类列表",
-        "tags": ["Public"],
-        "responses": { "200": { "description": "查询成功" } }
-      }
-    },
-    "/navs": {
-      "get": {
-        "summary": "公开导航列表",
-        "tags": ["Public"],
-        "responses": { "200": { "description": "查询成功" } }
-      }
-    },
-    "/settings": {
-      "get": {
-        "summary": "公开站点设置",
-        "tags": ["Public"],
-        "responses": { "200": { "description": "查询成功" } }
-      }
-    },
-    "/tag_list": {
-      "get": {
-        "summary": "公开标签列表",
-        "tags": ["Public"],
-        "responses": { "200": { "description": "查询成功" } }
-      }
-    },
-    "/friend_link": {
-      "get": {
-        "summary": "公开友链列表",
-        "tags": ["Public"],
-        "responses": { "200": { "description": "查询成功" } }
-      }
-    },
-    "/archives": {
-      "get": {
-        "summary": "文章归档",
-        "tags": ["Public"],
-        "responses": { "200": { "description": "查询成功" } }
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
       }
     },
     "/admin/dashboard": {
       "get": {
         "summary": "后台仪表盘",
         "tags": ["Admin"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "查询成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          }
+        }
       }
     },
     "/admin/articles": {
       "get": {
         "summary": "后台文章分页",
         "tags": ["Article"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name": "page", "in": "query", "schema": { "type": "integer" } },
-          { "name": "pageSize", "in": "query", "schema": { "type": "integer" } },
-          { "name": "keyword", "in": "query", "schema": { "type": "string" } },
-          { "name": "status", "in": "query", "schema": { "type": "integer", "enum": [0, 1, 2] } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
         ],
-        "responses": { "200": { "description": "查询成功" } }
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Keyword"
+          },
+          {
+            "$ref": "#/components/parameters/Status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
       },
       "post": {
         "summary": "创建文章",
         "tags": ["Article"],
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
           "required": true,
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ArticlePayload" }
+              "schema": {
+                "$ref": "#/components/schemas/ArticlePayload"
+              }
             }
           }
         },
-        "responses": { "201": { "description": "创建成功" } }
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/Created"
+          }
+        }
       }
     },
     "/admin/articles/{id}": {
       "put": {
         "summary": "更新文章",
         "tags": ["Article"],
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
         ],
         "requestBody": {
           "content": {
             "application/json": {
-              "schema": { "$ref": "#/components/schemas/ArticlePayload" }
+              "schema": {
+                "$ref": "#/components/schemas/ArticlePayload"
+              }
             }
           }
         },
-        "responses": { "200": { "description": "更新成功" } }
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       },
       "delete": {
         "summary": "删除文章",
         "tags": ["Article"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name": "id", "in": "path", "required": true, "schema": { "type": "integer" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
         ],
-        "responses": { "200": { "description": "删除成功" } }
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       }
     },
     "/admin/tags": {
       "get": {
         "summary": "后台标签分页",
         "tags": ["Tag"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "查询成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Keyword"
+          },
+          {
+            "$ref": "#/components/parameters/Status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
       },
       "post": {
         "summary": "创建标签",
         "tags": ["Tag"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "201": { "description": "创建成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/Created"
+          }
+        }
+      }
+    },
+    "/admin/tags/{id}": {
+      "put": {
+        "summary": "更新标签",
+        "tags": ["Tag"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TagPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "删除标签",
+        "tags": ["Tag"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       }
     },
     "/admin/categories": {
       "get": {
         "summary": "后台分类分页",
         "tags": ["Category"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "查询成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Keyword"
+          },
+          {
+            "$ref": "#/components/parameters/Status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
       },
       "post": {
         "summary": "创建分类",
         "tags": ["Category"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "201": { "description": "创建成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/Created"
+          }
+        }
+      }
+    },
+    "/admin/categories/{id}": {
+      "put": {
+        "summary": "更新分类",
+        "tags": ["Category"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CategoryPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "删除分类",
+        "tags": ["Category"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       }
     },
     "/admin/navs": {
       "get": {
         "summary": "后台导航分页",
         "tags": ["Nav"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "查询成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Keyword"
+          },
+          {
+            "$ref": "#/components/parameters/Status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
       },
       "post": {
         "summary": "创建导航",
         "tags": ["Nav"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "201": { "description": "创建成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NavPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/Created"
+          }
+        }
+      }
+    },
+    "/admin/navs/{id}": {
+      "put": {
+        "summary": "更新导航",
+        "tags": ["Nav"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NavPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "删除导航",
+        "tags": ["Nav"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       }
     },
     "/admin/friend_links": {
       "get": {
         "summary": "后台友链分页",
         "tags": ["FriendLink"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "查询成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Keyword"
+          },
+          {
+            "$ref": "#/components/parameters/Status"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
       },
       "post": {
         "summary": "创建友链",
         "tags": ["FriendLink"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "201": { "description": "创建成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FriendLinkPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/Created"
+          }
+        }
+      }
+    },
+    "/admin/friend_links/{id}": {
+      "put": {
+        "summary": "更新友链",
+        "tags": ["FriendLink"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FriendLinkPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "删除友链",
+        "tags": ["FriendLink"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       }
     },
     "/admin/settings": {
       "get": {
         "summary": "后台设置分页",
         "tags": ["Setting"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "查询成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Keyword"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
       },
       "post": {
         "summary": "保存设置",
         "tags": ["Setting"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "201": { "description": "保存成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/Created"
+          }
+        }
+      }
+    },
+    "/admin/settings/map": {
+      "get": {
+        "summary": "后台设置键值映射",
+        "tags": ["Setting"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
+      }
+    },
+    "/admin/settings/{id}": {
+      "put": {
+        "summary": "更新设置",
+        "tags": ["Setting"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SettingPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "删除设置",
+        "tags": ["Setting"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       }
     },
     "/admin/users": {
       "get": {
         "summary": "后台用户分页",
         "tags": ["User"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "200": { "description": "查询成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "$ref": "#/components/parameters/Keyword"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
       },
       "post": {
         "summary": "创建用户",
         "tags": ["User"],
-        "security": [{ "bearerAuth": [] }],
-        "responses": { "201": { "description": "创建成功" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/Created"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}": {
+      "put": {
+        "summary": "更新用户",
+        "tags": ["User"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
+      "delete": {
+        "summary": "删除用户",
+        "tags": ["User"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/admin/users/{id}/password": {
+      "put": {
+        "summary": "修改用户密码",
+        "tags": ["User"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PasswordPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Empty"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
       }
     },
     "/admin/uploads/base64": {
       "post": {
         "summary": "base64 文件上传",
         "tags": ["Upload"],
-        "security": [{ "bearerAuth": [] }],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
-                "type": "object",
-                "properties": {
-                  "mime": { "type": "string" },
-                  "content": { "type": "string" },
-                  "dataUrl": { "type": "string" }
-                }
+                "$ref": "#/components/schemas/UploadPayload"
               }
             }
           }
         },
-        "responses": { "201": { "description": "上传成功" } }
+        "responses": {
+          "201": {
+            "$ref": "#/components/responses/Created"
+          }
+        }
       }
     },
     "/admin/audit_logs": {
       "get": {
         "summary": "审计日志分页",
         "tags": ["AuditLog"],
-        "security": [{ "bearerAuth": [] }],
-        "parameters": [
-          { "name": "username", "in": "query", "schema": { "type": "string" } },
-          { "name": "method", "in": "query", "schema": { "type": "string" } },
-          { "name": "path", "in": "query", "schema": { "type": "string" } },
-          { "name": "status", "in": "query", "schema": { "type": "integer" } },
-          { "name": "start_time", "in": "query", "schema": { "type": "string" } },
-          { "name": "end_time", "in": "query", "schema": { "type": "string" } }
+        "security": [
+          {
+            "bearerAuth": []
+          }
         ],
-        "responses": { "200": { "description": "查询成功" } }
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/Page"
+          },
+          {
+            "$ref": "#/components/parameters/PageSize"
+          },
+          {
+            "name": "username",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "method",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 100,
+              "maximum": 599
+            }
+          },
+          {
+            "name": "start_time",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_time",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          }
+        }
       }
     }
   }

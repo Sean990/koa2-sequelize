@@ -1,3 +1,21 @@
+import { existsSync } from 'node:fs';
+import path from 'node:path';
+
+export const projectRoot = path.join(import.meta.dirname, '..');
+
+function resolveProjectPath(value) {
+	return path.isAbsolute(value) ? value : path.join(projectRoot, value);
+}
+
+const envFile = path.join(projectRoot, '.env');
+
+if (existsSync(envFile)) {
+	if (typeof process.loadEnvFile !== 'function') {
+		throw new Error('当前 Node.js 版本不支持 process.loadEnvFile，请升级 Node.js 或改用环境变量启动');
+	}
+	process.loadEnvFile(envFile);
+}
+
 const isProduction = process.env.NODE_ENV === 'production';
 
 export default {
@@ -35,7 +53,7 @@ export default {
 		user: [],
 	},
 	upload: {
-		dir: process.env.UPLOAD_DIR || 'public/uploads',
+		dir: resolveProjectPath(process.env.UPLOAD_DIR || 'public/uploads'),
 		urlPrefix: process.env.UPLOAD_URL_PREFIX || '/uploads',
 		maxSize: Number(process.env.UPLOAD_MAX_SIZE) || 2 * 1024 * 1024,
 		allowedMimes: (process.env.UPLOAD_ALLOWED_MIMES || 'image/jpeg,image/png,image/webp,image/gif')

@@ -5,7 +5,7 @@ import debugFactory from 'debug';
 import app from '../app.js';
 import config from '../config/config.js';
 import { initDatabase } from '../config/db.js';
-import { ensureAdminUser, ensureDefaultSettings } from '../bootstrap/initAdmin.js';
+import { ensureAdminUser, ensureDefaultSettings, ensureDefaultCategory } from '../bootstrap/initAdmin.js';
 
 const debug = debugFactory('sean-blog:server');
 const port = normalizePort(config.port);
@@ -16,6 +16,7 @@ async function main() {
 		await initDatabase();
 		await ensureAdminUser();
 		await ensureDefaultSettings();
+		await ensureDefaultCategory();
 	} catch (err) {
 		console.error('[startup] initialization failed:', err);
 		process.exit(1);

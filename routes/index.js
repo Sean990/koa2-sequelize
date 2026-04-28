@@ -59,6 +59,7 @@ admin.get('/dashboard', requirePermission('dashboard:read'), IndexController.Das
 
 admin.get('/articles', requirePermission('article:read'), ArticleController.adminList);
 admin.post('/articles', requirePermission('article:write'), ArticleController.create);
+admin['get']('/articles/:id', requirePermission('article:read'), ArticleController.adminDetail);
 admin.put('/articles/:id', requirePermission('article:write'), ArticleController.update);
 admin.delete('/articles/:id', requireRole('admin'), ArticleController.remove);
 

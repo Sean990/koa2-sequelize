@@ -3,11 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "engines": {
+    "node": ">=22.0.0"
+  },
   "scripts": {
     "start": "node bin/www",
     "dev": "nodemon bin/www",
-    "prd": "pm2 start bin/www",
-    "check": "node --check app.js && node --check bin/www && node --check routes/index.js",
+    "prd": "pm2 start ecosystem.config.cjs",
+    "check": "node scripts/check-syntax.js && node scripts/check-openapi-routes.js",
     "test:integration": "node scripts/integration-test.js",
     "backup:db": "node scripts/backup-db.js"
   },

@@ -59,7 +59,7 @@ function swaggerHtml() {
 class DocsController {
 	static async openapi(ctx) {
 		if (!cache) {
-			const file = path.join(process.cwd(), 'docs/openapi.json');
+			const file = path.join(import.meta.dirname, '..', 'docs/openapi.json');
 			cache = JSON.parse(await readFile(file, 'utf8'));
 		}
 		ctx.status = 200;
