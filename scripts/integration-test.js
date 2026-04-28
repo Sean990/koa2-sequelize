@@ -12,6 +12,7 @@ const username = `${marker}_admin`;
 const password = 'Test123456';
 const siteImageKeys = ['site.logo', 'site.banner', 'site.og_image'];
 const localDatabaseHosts = new Set(['localhost', '127.0.0.1', '::1']);
+const testPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
 
 let server;
 let baseUrl;
@@ -22,10 +23,11 @@ let navId;
 let tagId;
 let articleId;
 let friendLinkId;
-let uploadUrl;
 let settingId;
 let siteImageSnapshotReady = false;
 let siteImageStates = [];
+let createdUploadUrls = [];
+let siteImageUploadUrl = '';
 
 function now() {
 	return Math.floor(Date.now() / 1000);
@@ -71,6 +73,13 @@ async function snapshotSetting(key) {
 	return rows[0] || null;
 }
 
+async function getSettingById(id) {
+	const [rows] = await sequelize.query('SELECT * FROM cms_setting WHERE id = ? LIMIT 1', {
+		replacements: [id],
+	});
+	return rows[0] || null;
+}
+
 async function insertSettingPlaceholder(key) {
 	const ts = now();
 	const [result] = await sequelize.query(
@@ -90,20 +99,29 @@ async function insertSettingPlaceholder(key) {
 	return result.insertId;
 }
 
-async function restoreSetting(row) {
-	if (!row) return;
+async function restoreSettingIfOwned({ key, backup }) {
+	if (!backup) return;
+	const current = await getSettingById(backup.id);
+	if (!current) {
+		console.warn(`[cleanup skipped] setting ${key} missing before restore`);
+		return;
+	}
+	if (current.id !== backup.id || current.remark !== marker || current.setting_value !== siteImageUploadUrl) {
+		console.warn(`[cleanup skipped] setting ${key} changed after test, id=${backup.id}`);
+		return;
+	}
 	await sequelize.query(
 		`UPDATE cms_setting
 		 SET setting_value = ?, value_type = ?, remark = ?, is_public = ?, update_time = ?
 		 WHERE id = ?`,
 		{
 			replacements: [
-				row.setting_value,
-				row.value_type,
-				row.remark,
-				row.is_public,
-				row.update_time,
-				row.id,
+				backup.setting_value,
+				backup.value_type,
+				backup.remark,
+				backup.is_public,
+				backup.update_time,
+				backup.id,
 			],
 		}
 	);
@@ -111,10 +129,7 @@ async function restoreSetting(row) {
 
 async function deletePlaceholderSetting({ key, placeholderId }) {
 	if (!placeholderId) return;
-	const [rows] = await sequelize.query('SELECT id, setting_key, remark FROM cms_setting WHERE id = ? LIMIT 1', {
-		replacements: [placeholderId],
-	});
-	const current = rows[0];
+	const current = await getSettingById(placeholderId);
 	if (!current) return;
 	if (current.setting_key !== key || current.remark !== marker) {
 		console.warn(`[cleanup skipped] setting ${key} changed after test, placeholder id=${placeholderId}`);
@@ -139,6 +154,50 @@ async function ensureSiteImageRows() {
 	siteImageSnapshotReady = true;
 }
 
+async function uploadTestImage() {
+	const upload = await request('/admin/uploads/base64', {
+		method: 'POST',
+		body: JSON.stringify({
+			mime: 'image/png',
+			content: testPngBase64,
+		}),
+	});
+	const url = upload.body.data.url;
+	createdUploadUrls.push(url);
+	return url;
+}
+
+async function deleteUploadedFiles() {
+	for (const url of new Set(createdUploadUrls)) {
+		const relative = url.replace(config.upload.urlPrefix, '').replace(/^\//, '');
+		await rm(path.join(config.upload.dir, relative), { force: true });
+	}
+}
+
+async function assertNavVisible(expectedUrl, navName) {
+	const publicNavList = await request('/navs');
+	if (!publicNavList.body.data.some((item) => item.id === navId && item.nav_icon === expectedUrl)) {
+		throw new Error(`公共导航接口未返回预期 nav_icon: ${expectedUrl}`);
+	}
+
+	const navList = await request(`/admin/navs?page=1&pageSize=5&keyword=${encodeURIComponent(navName)}`);
+	if (!navList.body.data.rows.some((item) => item.id === navId && item.nav_icon === expectedUrl)) {
+		throw new Error(`后台导航接口未返回预期 nav_icon: ${expectedUrl}`);
+	}
+}
+
+async function assertFriendLinkVisible(expectedUrl, friendLinkTitle) {
+	const publicFriendLinkList = await request('/friend_link');
+	if (!publicFriendLinkList.body.data.some((item) => item.id === friendLinkId && item.friendlink_logo === expectedUrl)) {
+		throw new Error(`公共友链接口未返回预期 friendlink_logo: ${expectedUrl}`);
+	}
+
+	const friendLinkList = await request(`/admin/friend_links?page=1&pageSize=5&keyword=${encodeURIComponent(friendLinkTitle)}`);
+	if (!friendLinkList.body.data.rows.some((item) => item.id === friendLinkId && item.friendlink_logo === expectedUrl)) {
+		throw new Error(`后台友链接口未返回预期 friendlink_logo: ${expectedUrl}`);
+	}
+}
+
 async function cleanup() {
 	try {
 		if (articleId) await sequelize.query('DELETE FROM cms_article_tag WHERE article_id = ?', { replacements: [articleId] });
@@ -151,7 +210,7 @@ async function cleanup() {
 		if (siteImageSnapshotReady) {
 			for (const state of siteImageStates) {
 				if (state.backup) {
-					await restoreSetting(state.backup);
+					await restoreSettingIfOwned(state);
 				} else {
 					await deletePlaceholderSetting(state);
 				}
@@ -161,10 +220,7 @@ async function cleanup() {
 		await sequelize.query('DELETE FROM cms_audit_log WHERE username = ? OR request_body LIKE ?', {
 			replacements: [username, `%${marker}%`],
 		});
-		if (uploadUrl) {
-			const relative = uploadUrl.replace(config.upload.urlPrefix, '').replace(/^\//, '');
-			await rm(path.join(config.upload.dir, relative), { force: true });
-		}
+		await deleteUploadedFiles();
 	} catch (err) {
 		console.error('[cleanup failed]', err.message);
 	}
@@ -218,14 +274,7 @@ async function main() {
 
 	await ensureSiteImageRows();
 
-	const upload = await request('/admin/uploads/base64', {
-		method: 'POST',
-		body: JSON.stringify({
-			mime: 'image/png',
-			content: 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=',
-		}),
-	});
-	uploadUrl = upload.body.data.url;
+	siteImageUploadUrl = await uploadTestImage();
 
 	const nav = await request('/admin/navs', {
 		method: 'POST',
@@ -233,7 +282,7 @@ async function main() {
 			nav_name: navName,
 			nav_url: '/articles',
 			target: '_self',
-			nav_icon: uploadUrl,
+			nav_icon: siteImageUploadUrl,
 			sort: 999999,
 		}),
 	});
@@ -244,7 +293,7 @@ async function main() {
 		body: JSON.stringify({
 			friendlink_title: friendLinkTitle,
 			friendlink_url: 'https://example.com',
-			friendlink_logo: uploadUrl,
+			friendlink_logo: siteImageUploadUrl,
 		}),
 	});
 	friendLinkId = friendLink.body.data.id;
@@ -266,7 +315,7 @@ async function main() {
 			method: 'POST',
 			body: JSON.stringify({
 				setting_key: key,
-				setting_value: uploadUrl,
+				setting_value: siteImageUploadUrl,
 				value_type: 'string',
 				remark: marker,
 				is_public: 1,
@@ -280,7 +329,7 @@ async function main() {
 			category_id: categoryId,
 			article_title: `${marker} 文章`,
 			article_cont: '这是一篇用于真实数据库接口验证的文章内容。',
-			article_pic: uploadUrl,
+			article_pic: siteImageUploadUrl,
 			article_summary: '接口验证摘要',
 			article_slug: marker,
 			seo_title: '接口验证 SEO 标题',
@@ -300,41 +349,43 @@ async function main() {
 	await request(`/article?slug=${marker}`);
 	await request('/categories');
 
-	const publicNavList = await request('/navs');
-	if (!publicNavList.body.data.some((item) => item.id === navId && item.nav_icon === uploadUrl)) {
-		throw new Error('公共导航接口未返回 nav_icon');
-	}
-
-	const publicFriendLinkList = await request('/friend_link');
-	if (!publicFriendLinkList.body.data.some((item) => item.id === friendLinkId && item.friendlink_logo === uploadUrl)) {
-		throw new Error('公共友链接口未返回 friendlink_logo');
-	}
+	await assertNavVisible(siteImageUploadUrl, navName);
+	await assertFriendLinkVisible(siteImageUploadUrl, friendLinkTitle);
 
 	const publicSettings = await request('/settings');
 	for (const key of siteImageKeys) {
-		if (publicSettings.body.data[key] !== uploadUrl) {
+		if (publicSettings.body.data[key] !== siteImageUploadUrl) {
 			throw new Error(`公共 settings 未返回 ${key}`);
 		}
 	}
 
 	await request('/admin/settings?page=1&pageSize=5');
 
-	const navList = await request(`/admin/navs?page=1&pageSize=5&keyword=${encodeURIComponent(navName)}`);
-	if (!navList.body.data.rows.some((item) => item.id === navId && item.nav_icon === uploadUrl)) {
-		throw new Error('nav_icon 未持久化');
-	}
-
-	const friendLinkList = await request(`/admin/friend_links?page=1&pageSize=5&keyword=${encodeURIComponent(friendLinkTitle)}`);
-	if (!friendLinkList.body.data.rows.some((item) => item.id === friendLinkId && item.friendlink_logo === uploadUrl)) {
-		throw new Error('friendlink_logo 未持久化');
-	}
-
 	const settingsMap = await request('/admin/settings/map');
 	for (const key of siteImageKeys) {
-		if (settingsMap.body.data[key] !== uploadUrl) {
+		if (settingsMap.body.data[key] !== siteImageUploadUrl) {
 			throw new Error(`${key} 未写入`);
 		}
 	}
+
+	const updatedImageUrl = await uploadTestImage();
+
+	await request(`/admin/navs/${navId}`, {
+		method: 'PUT',
+		body: JSON.stringify({
+			nav_icon: updatedImageUrl,
+		}),
+	});
+
+	await request(`/admin/friend_links/${friendLinkId}`, {
+		method: 'PUT',
+		body: JSON.stringify({
+			friendlink_logo: updatedImageUrl,
+		}),
+	});
+
+	await assertNavVisible(updatedImageUrl, navName);
+	await assertFriendLinkVisible(updatedImageUrl, friendLinkTitle);
 
 	await request('/admin/articles?page=1&pageSize=5');
 	await request('/admin/dashboard');
@@ -349,7 +400,8 @@ async function main() {
 		navId,
 		friendLinkId,
 		settingId,
-		uploadUrl,
+		uploadUrl: siteImageUploadUrl,
+		updatedImageUrl,
 	}, null, 2));
 }
 
