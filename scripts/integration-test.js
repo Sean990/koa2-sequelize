@@ -10,6 +10,8 @@ import { hashPassword } from '../utils/password.js';
 const marker = `codex_${Date.now()}`;
 const username = `${marker}_admin`;
 const password = 'Test123456';
+const siteImageKeys = ['site.logo', 'site.banner', 'site.og_image'];
+
 let server;
 let baseUrl;
 let token;
@@ -21,7 +23,8 @@ let articleId;
 let friendLinkId;
 let uploadUrl;
 let settingId;
-let siteImageBackups = [];
+let siteImageBackups = null;
+let siteImageSnapshotReady = false;
 
 function assertSafeIntegrationTarget() {
 	if (config.env === 'production') {
@@ -87,15 +90,16 @@ async function cleanup() {
 		if (navId) await sequelize.query('DELETE FROM cms_nav WHERE id = ?', { replacements: [navId] });
 		if (friendLinkId) await sequelize.query('DELETE FROM cms_friendlink WHERE id = ?', { replacements: [friendLinkId] });
 		if (settingId) await sequelize.query('DELETE FROM cms_setting WHERE id = ?', { replacements: [settingId] });
-		const siteImageKeys = ['site.logo', 'site.banner', 'site.og_image'];
-		for (let i = 0; i < siteImageKeys.length; i += 1) {
-			const backup = siteImageBackups[i];
-			if (backup) {
-				await restoreSetting(backup);
-			} else {
-				await sequelize.query('DELETE FROM cms_setting WHERE setting_key = ?', {
-					replacements: [siteImageKeys[i]],
-				});
+		if (siteImageSnapshotReady && siteImageBackups) {
+			for (let i = 0; i < siteImageKeys.length; i += 1) {
+				const backup = siteImageBackups[i];
+				if (backup) {
+					await restoreSetting(backup);
+				} else {
+					await sequelize.query('DELETE FROM cms_setting WHERE setting_key = ?', {
+						replacements: [siteImageKeys[i]],
+					});
+				}
 			}
 		}
 		if (userId) await sequelize.query('DELETE FROM cms_user WHERE id = ?', { replacements: [userId] });
@@ -148,17 +152,17 @@ async function main() {
 	});
 	categoryId = category.body.data.id;
 
+	const navName = marker.slice(0, 20);
+	const friendLinkTitle = marker.slice(0, 20);
+
 	const tag = await request('/admin/tags', {
 		method: 'POST',
 		body: JSON.stringify({ tag_title: marker.slice(0, 20) }),
 	});
 	tagId = tag.body.data.id;
 
-	siteImageBackups = await Promise.all([
-		snapshotSetting('site.logo'),
-		snapshotSetting('site.banner'),
-		snapshotSetting('site.og_image'),
-	]);
+	siteImageBackups = await Promise.all(siteImageKeys.map((key) => snapshotSetting(key)));
+	siteImageSnapshotReady = true;
 
 	const upload = await request('/admin/uploads/base64', {
 		method: 'POST',
@@ -172,10 +176,11 @@ async function main() {
 	const nav = await request('/admin/navs', {
 		method: 'POST',
 		body: JSON.stringify({
-			nav_name: marker.slice(0, 20),
+			nav_name: navName,
 			nav_url: '/articles',
 			target: '_self',
 			nav_icon: uploadUrl,
+			sort: 999999,
 		}),
 	});
 	navId = nav.body.data.id;
@@ -183,7 +188,7 @@ async function main() {
 	const friendLink = await request('/admin/friend_links', {
 		method: 'POST',
 		body: JSON.stringify({
-			friendlink_title: marker.slice(0, 20),
+			friendlink_title: friendLinkTitle,
 			friendlink_url: 'https://example.com',
 			friendlink_logo: uploadUrl,
 		}),
@@ -202,16 +207,18 @@ async function main() {
 	});
 	settingId = setting.body.data.id;
 
-	await request('/admin/settings', {
-		method: 'POST',
-		body: JSON.stringify({
-			setting_key: 'site.logo',
-			setting_value: uploadUrl,
-			value_type: 'string',
-			remark: marker,
-			is_public: 1,
-		}),
-	});
+	for (const key of siteImageKeys) {
+		await request('/admin/settings', {
+			method: 'POST',
+			body: JSON.stringify({
+				setting_key: key,
+				setting_value: uploadUrl,
+				value_type: 'string',
+				remark: marker,
+				is_public: 1,
+			}),
+		});
+	}
 
 	const article = await request('/admin/articles', {
 		method: 'POST',
@@ -238,21 +245,37 @@ async function main() {
 	await request(`/article?id=${articleId}`);
 	await request(`/article?slug=${marker}`);
 	await request('/categories');
-	await request('/navs');
+
+	const publicNavList = await request('/navs');
+	if (!publicNavList.body.data.some((item) => item.id === navId && item.nav_icon === uploadUrl)) {
+		throw new Error('公共导航接口未返回 nav_icon');
+	}
+
+	const publicFriendLinkList = await request('/friend_link');
+	if (!publicFriendLinkList.body.data.some((item) => item.id === friendLinkId && item.friendlink_logo === uploadUrl)) {
+		throw new Error('公共友链接口未返回 friendlink_logo');
+	}
+
 	await request('/settings');
 	await request('/admin/settings?page=1&pageSize=5');
-	const navList = await request('/admin/navs?page=1&pageSize=5');
+
+	const navList = await request(`/admin/navs?page=1&pageSize=5&keyword=${encodeURIComponent(navName)}`);
 	if (!navList.body.data.rows.some((item) => item.id === navId && item.nav_icon === uploadUrl)) {
 		throw new Error('nav_icon 未持久化');
 	}
-	const friendLinkList = await request('/admin/friend_links?page=1&pageSize=5');
+
+	const friendLinkList = await request(`/admin/friend_links?page=1&pageSize=5&keyword=${encodeURIComponent(friendLinkTitle)}`);
 	if (!friendLinkList.body.data.rows.some((item) => item.id === friendLinkId && item.friendlink_logo === uploadUrl)) {
 		throw new Error('friendlink_logo 未持久化');
 	}
+
 	const settingsMap = await request('/admin/settings/map');
-	if (settingsMap.body.data['site.logo'] !== uploadUrl) {
-		throw new Error('site.logo 未写入');
+	for (const key of siteImageKeys) {
+		if (settingsMap.body.data[key] !== uploadUrl) {
+			throw new Error(`${key} 未写入`);
+		}
 	}
+
 	await request('/admin/articles?page=1&pageSize=5');
 	await request('/admin/dashboard');
 	await request('/admin/users?page=1&pageSize=5');
