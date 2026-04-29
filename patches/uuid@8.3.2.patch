@@ -1,0 +1,184 @@
+diff --git a/dist/esm-browser/v1.js b/dist/esm-browser/v1.js
+index 1a22591ef1eb8f9a426d86a6dc3e105227608883..1e2ea87ee40139a38986df7efd9983ce6515dcdd 100644
+--- a/dist/esm-browser/v1.js
++++ b/dist/esm-browser/v1.js
+@@ -16,6 +16,17 @@ function v1(options, buf, offset) {
+   var i = buf && offset || 0;
+   var b = buf || new Array(16);
+   options = options || {};
++
++  if (buf) {
++    offset = offset || 0;
++
++    if (offset < 0 || offset + 16 > buf.length) {
++      throw new RangeError("UUID byte range ".concat(offset, ":").concat(offset + 15, " is out of buffer bounds"));
++    }
++
++    i = offset;
++  }
++
+   var node = options.node || _nodeId;
+   var clockseq = options.clockseq !== undefined ? options.clockseq : _clockseq; // node and clockseq need to be initialized to random values if they're not
+   // specified.  We do this lazily to minimize issues related to insufficient
+diff --git a/dist/esm-browser/v35.js b/dist/esm-browser/v35.js
+index 31dd8a1c89b1679760c610425acd3bdc6a101cd6..102322e13031ff37105d676297b18cf19c0f7754 100644
+--- a/dist/esm-browser/v35.js
++++ b/dist/esm-browser/v35.js
+@@ -37,14 +37,18 @@ export default function (name, version, hashfunc) {
+     bytes.set(value, namespace.length);
+     bytes = hashfunc(bytes);
+     bytes[6] = bytes[6] & 0x0f | version;
+-    bytes[8] = bytes[8] & 0x3f | 0x80;
++  bytes[8] = bytes[8] & 0x3f | 0x80;
+ 
+-    if (buf) {
+-      offset = offset || 0;
++  if (buf) {
++    offset = offset || 0;
+ 
+-      for (var i = 0; i < 16; ++i) {
+-        buf[offset + i] = bytes[i];
+-      }
++    if (offset < 0 || offset + 16 > buf.length) {
++      throw new RangeError("UUID byte range ".concat(offset, ":").concat(offset + 15, " is out of buffer bounds"));
++    }
++
++    for (var i = 0; i < 16; ++i) {
++      buf[offset + i] = bytes[i];
++    }
+ 
+       return buf;
+     }
+diff --git a/dist/esm-browser/v4.js b/dist/esm-browser/v4.js
+index 404810a488de0a44cba0a48564183fe8f9296f37..f2f522d631e4bad9ac18a249e698af68dad504c8 100644
+--- a/dist/esm-browser/v4.js
++++ b/dist/esm-browser/v4.js
+@@ -11,6 +11,10 @@ function v4(options, buf, offset) {
+   if (buf) {
+     offset = offset || 0;
+ 
++    if (offset < 0 || offset + 16 > buf.length) {
++      throw new RangeError("UUID byte range ".concat(offset, ":").concat(offset + 15, " is out of buffer bounds"));
++    }
++
+     for (var i = 0; i < 16; ++i) {
+       buf[offset + i] = rnds[i];
+     }
+diff --git a/dist/esm-node/v1.js b/dist/esm-node/v1.js
+index ebf81acb7d3a877a799daf0c247e3e5bc18da65f..c8c690f8df81459d8d3ef81aacfc79e9a6a9793a 100644
+--- a/dist/esm-node/v1.js
++++ b/dist/esm-node/v1.js
+@@ -16,6 +16,17 @@ function v1(options, buf, offset) {
+   let i = buf && offset || 0;
+   const b = buf || new Array(16);
+   options = options || {};
++
++  if (buf) {
++    offset = offset || 0;
++
++    if (offset < 0 || offset + 16 > buf.length) {
++      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
++    }
++
++    i = offset;
++  }
++
+   let node = options.node || _nodeId;
+   let clockseq = options.clockseq !== undefined ? options.clockseq : _clockseq; // node and clockseq need to be initialized to random values if they're not
+   // specified.  We do this lazily to minimize issues related to insufficient
+diff --git a/dist/esm-node/v35.js b/dist/esm-node/v35.js
+index 22f6a196037f91b22cd5fca753a7a1f51071fb18..f92c820299d01ee370124496dd43181ffe3ccf3d 100644
+--- a/dist/esm-node/v35.js
++++ b/dist/esm-node/v35.js
+@@ -37,14 +37,18 @@ export default function (name, version, hashfunc) {
+     bytes.set(value, namespace.length);
+     bytes = hashfunc(bytes);
+     bytes[6] = bytes[6] & 0x0f | version;
+-    bytes[8] = bytes[8] & 0x3f | 0x80;
++  bytes[8] = bytes[8] & 0x3f | 0x80;
+ 
+-    if (buf) {
+-      offset = offset || 0;
++  if (buf) {
++    offset = offset || 0;
+ 
+-      for (let i = 0; i < 16; ++i) {
+-        buf[offset + i] = bytes[i];
+-      }
++    if (offset < 0 || offset + 16 > buf.length) {
++      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
++    }
++
++    for (let i = 0; i < 16; ++i) {
++      buf[offset + i] = bytes[i];
++    }
+ 
+       return buf;
+     }
+diff --git a/dist/esm-node/v4.js b/dist/esm-node/v4.js
+index efad926f68deedd9a3446462576b4fd1f7ddc341..bba3b821cc39fd36abb7743ff76d840a8b56adf6 100644
+--- a/dist/esm-node/v4.js
++++ b/dist/esm-node/v4.js
+@@ -11,6 +11,10 @@ function v4(options, buf, offset) {
+   if (buf) {
+     offset = offset || 0;
+ 
++    if (offset < 0 || offset + 16 > buf.length) {
++      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
++    }
++
+     for (let i = 0; i < 16; ++i) {
+       buf[offset + i] = rnds[i];
+     }
+diff --git a/dist/v1.js b/dist/v1.js
+index abb9b3d1672a32e9abcc82e192d06f8d9c779816..b136f723796e35a5e0c90cae0ff37efad8fdf2c3 100644
+--- a/dist/v1.js
++++ b/dist/v1.js
+@@ -27,6 +27,17 @@ function v1(options, buf, offset) {
+   let i = buf && offset || 0;
+   const b = buf || new Array(16);
+   options = options || {};
++
++  if (buf) {
++    offset = offset || 0;
++
++    if (offset < 0 || offset + 16 > buf.length) {
++      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
++    }
++
++    i = offset;
++  }
++
+   let node = options.node || _nodeId;
+   let clockseq = options.clockseq !== undefined ? options.clockseq : _clockseq; // node and clockseq need to be initialized to random values if they're not
+   // specified.  We do this lazily to minimize issues related to insufficient
+diff --git a/dist/v35.js b/dist/v35.js
+index f784c6337fa0e29c17fecd43e90a478f0d2e206a..6321d0849dc995259ed460ab69e26ffabed9c762 100644
+--- a/dist/v35.js
++++ b/dist/v35.js
+@@ -56,6 +56,10 @@ function _default(name, version, hashfunc) {
+     if (buf) {
+       offset = offset || 0;
+ 
++      if (offset < 0 || offset + 16 > buf.length) {
++        throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
++      }
++
+       for (let i = 0; i < 16; ++i) {
+         buf[offset + i] = bytes[i];
+       }
+diff --git a/dist/v4.js b/dist/v4.js
+index 838ce0b28d7436b871c58a314a0e5a5c8de78abb..b8f69a7318b6425a7c3931a07c54ff6c2a4fecc5 100644
+--- a/dist/v4.js
++++ b/dist/v4.js
+@@ -23,6 +23,10 @@ function v4(options, buf, offset) {
+   if (buf) {
+     offset = offset || 0;
+ 
++    if (offset < 0 || offset + 16 > buf.length) {
++      throw new RangeError(`UUID byte range ${offset}:${offset + 15} is out of buffer bounds`);
++    }
++
+     for (let i = 0; i < 16; ++i) {
+       buf[offset + i] = rnds[i];
+     }
