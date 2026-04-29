@@ -49,6 +49,7 @@ router.get('/archives', ArchivesController.Index);
 router.post('/auth/login', rateLimit({ keyPrefix: 'login', max: 20 }), AuthController.login);
 router.get('/auth/me', auth(), AuthController.me);
 router.post('/auth/refresh', auth(), AuthController.refresh);
+router.put('/auth/password', auth(), AuthController.updatePassword);
 router.get('/auth/permissions', auth(), AuthController.permissions);
 
 const admin = new Router({ prefix: '/admin' });
@@ -59,7 +60,7 @@ admin.get('/dashboard', requirePermission('dashboard:read'), IndexController.Das
 
 admin.get('/articles', requirePermission('article:read'), ArticleController.adminList);
 admin.post('/articles', requirePermission('article:write'), ArticleController.create);
-admin['get']('/articles/:id', requirePermission('article:read'), ArticleController.adminDetail);
+admin.get('/articles/:id', requirePermission('article:read'), ArticleController.adminDetail);
 admin.put('/articles/:id', requirePermission('article:write'), ArticleController.update);
 admin.delete('/articles/:id', requireRole('admin'), ArticleController.remove);
 

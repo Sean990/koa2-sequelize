@@ -9,7 +9,8 @@ import { hashPassword } from '../utils/password.js';
 
 const marker = `codex_${Date.now()}`;
 const username = `${marker}_admin`;
-const password = 'Test123456';
+let password = 'Test123456';
+const nextPassword = 'Test1234567';
 const siteImageKeys = ['site.logo', 'site.banner', 'site.og_image'];
 const localDatabaseHosts = new Set(['localhost', '127.0.0.1', '::1']);
 const testPngBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+/p9sAAAAASUVORK5CYII=';
@@ -45,12 +46,13 @@ function assertSafeIntegrationTarget() {
 }
 
 async function request(apiPath, options = {}) {
+	const { expectedStatus, ...fetchOptions } = options;
 	const res = await fetch(`${baseUrl}${apiPath}`, {
-		...options,
+		...fetchOptions,
 		headers: {
 			'Content-Type': 'application/json',
 			...(token ? { Authorization: `Bearer ${token}` } : {}),
-			...(options.headers || {}),
+			...(fetchOptions.headers || {}),
 		},
 	});
 	const text = await res.text();
@@ -60,10 +62,38 @@ async function request(apiPath, options = {}) {
 	} catch {
 		body = { raw: text };
 	}
+	if (expectedStatus !== undefined) {
+		if (res.status !== expectedStatus) {
+			throw new Error(`${fetchOptions.method || 'GET'} ${apiPath} -> ${res.status} ${JSON.stringify(body)}`);
+		}
+		return { status: res.status, body };
+	}
 	if (res.status >= 400) {
 		throw new Error(`${options.method || 'GET'} ${apiPath} -> ${res.status} ${JSON.stringify(body)}`);
 	}
 	return { status: res.status, body };
+}
+
+function assertOpenapiContract(doc) {
+	const paths = doc?.paths || {};
+	const schemas = doc?.components?.schemas || {};
+	const authPassword = paths['/auth/password']?.put;
+	if (!authPassword) {
+		throw new Error('OpenAPI 缺少 PUT /auth/password');
+	}
+
+	const adminArticleDetail = paths['/admin/articles/{id}']?.get;
+	if (!adminArticleDetail) {
+		throw new Error('OpenAPI 缺少 GET /admin/articles/{id}');
+	}
+
+	if (schemas.NavPayload?.properties?.nav_icon?.type !== 'string') {
+		throw new Error('OpenAPI NavPayload 缺少 nav_icon 字段');
+	}
+
+	if (schemas.FriendLinkPayload?.properties?.friendlink_logo?.type !== 'string') {
+		throw new Error('OpenAPI FriendLinkPayload 缺少 friendlink_logo 字段');
+	}
 }
 
 async function snapshotSetting(key) {
@@ -243,7 +273,8 @@ async function main() {
 	baseUrl = `http://127.0.0.1:${server.address().port}/api/v1`;
 
 	await request('/health');
-	await request('/openapi.json');
+	const openapi = await request('/openapi.json');
+	assertOpenapiContract(openapi.body);
 	await request('/docs');
 	await request('/docs/assets/swagger-ui.css');
 	const login = await request('/auth/login', {
@@ -253,6 +284,24 @@ async function main() {
 	token = login.body.data.token;
 	await request('/auth/refresh', { method: 'POST' });
 	await request('/auth/permissions?permission=article:write');
+	await request('/auth/password', {
+		method: 'PUT',
+		body: JSON.stringify({
+			password,
+			newPassword: nextPassword,
+		}),
+	});
+	await request('/auth/login', {
+		method: 'POST',
+		expectedStatus: 401,
+		body: JSON.stringify({ username, password }),
+	});
+	const relogin = await request('/auth/login', {
+		method: 'POST',
+		body: JSON.stringify({ username, password: nextPassword }),
+	});
+	token = relogin.body.data.token;
+	password = nextPassword;
 
 	const category = await request('/admin/categories', {
 		method: 'POST',
@@ -388,6 +437,7 @@ async function main() {
 	await assertFriendLinkVisible(updatedImageUrl, friendLinkTitle);
 
 	await request('/admin/articles?page=1&pageSize=5');
+	await request(`/admin/articles/${articleId}`);
 	await request('/admin/dashboard');
 	await request('/admin/users?page=1&pageSize=5');
 	await request(`/admin/audit_logs?page=1&pageSize=5&username=${encodeURIComponent(username)}&method=POST`);

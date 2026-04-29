@@ -229,6 +229,10 @@
             "type": "string",
             "maxLength": 255
           },
+          "nav_icon": {
+            "type": "string",
+            "maxLength": 255
+          },
           "target": {
             "type": "string",
             "enum": ["_self", "_blank"]
@@ -252,6 +256,10 @@
           "friendlink_url": {
             "type": "string",
             "format": "uri"
+          },
+          "friendlink_logo": {
+            "type": "string",
+            "maxLength": 255
           },
           "status": {
             "type": "integer",
@@ -344,6 +352,21 @@
         "required": ["password"],
         "properties": {
           "password": {
+            "type": "string",
+            "minLength": 6,
+            "maxLength": 128
+          }
+        }
+      },
+      "AuthPasswordPayload": {
+        "type": "object",
+        "required": ["password", "newPassword"],
+        "properties": {
+          "password": {
+            "type": "string",
+            "maxLength": 128
+          },
+          "newPassword": {
             "type": "string",
             "minLength": 6,
             "maxLength": 128
@@ -732,6 +755,35 @@
         }
       }
     },
+    "/auth/password": {
+      "put": {
+        "summary": "当前用户修改密码",
+        "tags": ["Auth"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AuthPasswordPayload"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          }
+        }
+      }
+    },
     "/auth/permissions": {
       "get": {
         "summary": "当前权限",
@@ -834,6 +886,28 @@
       }
     },
     "/admin/articles/{id}": {
+      "get": {
+        "summary": "后台文章详情",
+        "tags": ["Article"],
+        "security": [
+          {
+            "bearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/IdPath"
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/Success"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          }
+        }
+      },
       "put": {
         "summary": "更新文章",
         "tags": ["Article"],

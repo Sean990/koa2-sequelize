@@ -116,6 +116,22 @@ class AuthController {
 		}, '刷新成功');
 	}
 
+	static async updatePassword(ctx) {
+		const uid = ctx.state.user?.uid;
+		const body = ctx.request.body || {};
+		const password = requireString(body, 'password', '原密码', { max: 128 });
+		const newPassword = requireString(body, 'newPassword', '新密码', { min: 6, max: 128 });
+
+		const user = await UserModel.raw.findOne({ where: { id: uid, status: 1 } });
+		if (!user) throw new NotFound('用户不存在');
+
+		const ok = await verifyPassword(password, user.password);
+		if (!ok) throw new AuthFailed('原密码错误');
+
+		await UserModel.updatePassword(uid, await hashPassword(newPassword));
+		success(ctx, null, '密码修改成功');
+	}
+
 	static async permissions(ctx) {
 		const role = ctx.state.user?.role;
 		const permission = ctx.query.permission;
