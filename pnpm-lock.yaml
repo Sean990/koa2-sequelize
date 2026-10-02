@@ -5,9 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 patchedDependencies:
-  uuid@8.3.2:
-    hash: 02b2b5389cd0bf1a38a1c93aa75e7ea8671f56d605c46751416b51ca8bb04bd7
-    path: patches/uuid@8.3.2.patch
+  uuid@8.3.2: 02b2b5389cd0bf1a38a1c93aa75e7ea8671f56d605c46751416b51ca8bb04bd7
 
 importers:
 
@@ -18,7 +16,7 @@ importers:
         version: 5.0.0
       '@koa/router':
         specifier: ^15.4.0
-        version: 15.4.0(koa@3.2.0)
+        version: 15.4.0(koa@3.2.0)(supports-color@5.5.0)
       '@types/node':
         specifier: ^25.6.0
         version: 25.6.0
@@ -39,16 +37,16 @@ importers:
         version: 3.2.1
       koa-static:
         specifier: ^5.0.0
-        version: 5.0.0
+        version: 5.0.0(supports-color@5.5.0)
       moment:
         specifier: latest
-        version: 2.30.1
+        version: 2.31.0
       mysql2:
         specifier: ^3.22.2
         version: 3.22.2(@types/node@25.6.0)
       sequelize:
         specifier: ^6.37.8
-        version: 6.37.8(mysql2@3.22.2(@types/node@25.6.0))
+        version: 6.37.8(mysql2@3.22.2(@types/node@25.6.0))(supports-color@5.5.0)
       swagger-ui-dist:
         specifier: ^5.32.4
         version: 5.32.4
@@ -114,9 +112,9 @@ packages:
     resolution: {integrity: sha512-Ceh+7ox5qe7LJuLHoY0feh3pHuUDHAcRUeyL2VYghZwfpkNIy/+8Ocg0a3UuSoYzavmylwuLWQOf3hl0jjMMIw==}
     engines: {node: '>=8'}
 
-  brace-expansion@5.0.5:
-    resolution: {integrity: sha512-VZznLgtwhn+Mact9tfiwx64fA9erHH/MCXEUfB/0bX/6Fz6ny5EGTXYltMocqg4xFAQZtnO3DHWWXi8RiuN7cQ==}
-    engines: {node: 18 || 20 || >=22}
+  brace-expansion@5.0.12:
+    resolution: {integrity: sha512-YovQ3rzhaLMIrDjNDMkNS01tea93qhEhG5xy8f6+R0l+dw3Ki+5sCoIoI942iuLZTHWogWktgwVDhU09iNEimQ==}
+    engines: {node: 20 || >=22}
 
   braces@3.0.3:
     resolution: {integrity: sha512-yQbXgO/OSZVD2IsiLlro+7Hf6Q18EJrKSEsdoMzKePKXct3gvD8oLcOQdIzGupr5Fj+EDe8gO/lxc1BzfMpxvA==}
@@ -437,8 +435,8 @@ packages:
   moment-timezone@0.5.48:
     resolution: {integrity: sha512-f22b8LV1gbTO2ms2j2z13MuPogNoh5UzxL3nzNAYKGraILnbGc9NEE6dyiiiLv46DGRb8A4kg8UKWLjPthxBHw==}
 
-  moment@2.30.1:
-    resolution: {integrity: sha512-uEmtNhbDOrWPFS+hdjFCBfy9f2YoyzRpwcl+DqpC6taX21FzsTLQVbMV/W7PzNSX6x/bhC1zA3c2UQ5NzH6how==}
+  moment@2.31.0:
+    resolution: {integrity: sha512-0acOTfMiWOheYS4eoWb80yYMb/JLvVv9SHbs2PehaDzfUG0Bw855SKyk0IKTnPGa5+U2bmi3W68l1+sGLX/pvw==}
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
@@ -664,6 +662,7 @@ packages:
 
   uuid@8.3.2:
     resolution: {integrity: sha512-+NYs2QeMWy+GWFOEm9xnn6HCDp0l7QBD7ml8zLUmJ+93Q5NF0NocErnwkTkXVFNiX3/fpC6afS8Dhb/gz7R7eg==}
+    deprecated: uuid@10 and below is no longer supported.  For ESM codebases, update to uuid@latest.  For CommonJS codebases, use uuid@11 (but be aware this version will likely be deprecated in 2028).
     hasBin: true
 
   validator@13.15.35:
@@ -685,7 +684,7 @@ snapshots:
     dependencies:
       vary: 1.1.2
 
-  '@koa/router@15.4.0(koa@3.2.0)':
+  '@koa/router@15.4.0(koa@3.2.0)(supports-color@5.5.0)':
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
       http-errors: 2.0.1
@@ -731,7 +730,7 @@ snapshots:
 
   binary-extensions@2.3.0: {}
 
-  brace-expansion@5.0.5:
+  brace-expansion@5.0.12:
     dependencies:
       balanced-match: 4.0.4
 
@@ -796,9 +795,11 @@ snapshots:
 
   core-util-is@1.0.3: {}
 
-  debug@3.2.7:
+  debug@3.2.7(supports-color@5.5.0):
     dependencies:
       ms: 2.1.3
+    optionalDependencies:
+      supports-color: 5.5.0
 
   debug@4.4.3(supports-color@5.5.0):
     dependencies:
@@ -981,7 +982,7 @@ snapshots:
       humanize-number: 0.0.2
       passthrough-counter: 1.0.0
 
-  koa-send@5.0.1:
+  koa-send@5.0.1(supports-color@5.5.0):
     dependencies:
       debug: 4.4.3(supports-color@5.5.0)
       http-errors: 1.8.1
@@ -989,10 +990,10 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  koa-static@5.0.0:
+  koa-static@5.0.0(supports-color@5.5.0):
     dependencies:
-      debug: 3.2.7
-      koa-send: 5.0.1
+      debug: 3.2.7(supports-color@5.5.0)
+      koa-send: 5.0.1(supports-color@5.5.0)
     transitivePeerDependencies:
       - supports-color
 
@@ -1043,13 +1044,13 @@ snapshots:
 
   minimatch@10.2.5:
     dependencies:
-      brace-expansion: 5.0.5
+      brace-expansion: 5.0.12
 
   moment-timezone@0.5.48:
     dependencies:
-      moment: 2.30.1
+      moment: 2.31.0
 
-  moment@2.30.1: {}
+  moment@2.31.0: {}
 
   ms@2.1.3: {}
 
@@ -1148,7 +1149,7 @@ snapshots:
 
   sequelize-pool@7.1.0: {}
 
-  sequelize@6.37.8(mysql2@3.22.2(@types/node@25.6.0)):
+  sequelize@6.37.8(mysql2@3.22.2(@types/node@25.6.0))(supports-color@5.5.0):
     dependencies:
       '@types/debug': 4.1.13
       '@types/validator': 13.15.10
@@ -1156,7 +1157,7 @@ snapshots:
       dottie: 2.0.7
       inflection: 1.13.4
       lodash: 4.18.1
-      moment: 2.30.1
+      moment: 2.31.0
       moment-timezone: 0.5.48
       pg-connection-string: 2.12.0
       retry-as-promised: 7.1.1
